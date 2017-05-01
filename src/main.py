@@ -1,5 +1,4 @@
 import spsc_data as spd
 
-meters = spd.LengthUnits("m")
-value = meters.convert_value_to(1, "cm")
-print value
+pot = spd.Potential([1, 2, 3, 4])
+pot.instant_plot()
