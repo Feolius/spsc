@@ -36,7 +36,7 @@ class APhysValue(object):
                 units_default_coeff = self.units_options[self.units]
             new_value *= units_default_coeff
             if new_units != self.units_default:
-                new_value /= self.units_options[new_units]
+                new_value = new_value * (1 / self.units_options[new_units])
             self.value = new_value
 
     def __add__(self, other):
@@ -60,6 +60,10 @@ class APhysValue(object):
             return self.__class__(self.value * other, self.units)
         else:
             raise ValueError("Invalid argument type given for * operator")
+
+    def __str__(self):
+        return str(self.value) + " " + self.units
+
 
 class EmptyUnitsValue(APhysValue):
 
@@ -89,6 +93,7 @@ class MassValue(APhysValue):
     def units_options(self):
         return {"kg": 1000.0}
 
+
 class EnergyValue(APhysValue):
     @property
     def units_default(self):
@@ -98,21 +103,60 @@ class EnergyValue(APhysValue):
     def units_options(self):
         return {"eV": (1 / (6.24150965 * 10 ** 11)), "J" : float(10 ** 7)}
 
+
+class DensityValue(APhysValue):
+    @property
+    def units_default(self):
+        return "cm^-2"
+
+    @property
+    def units_options(self):
+        return {"m^-2": float(100 ** -2)}
+
+
+class ChargeValue(APhysValue):
+    @property
+    def units_default(self):
+        return "esu"
+
+    @property
+    def units_options(self):
+        return {"C": 2997924580.0}
+
+
 class APhysValueArray(APhysValue):
 
     def __init__(self, array, units=False):
         if type(array) == list:
-            self.value = np.array(array).reshape((1, -1))
+            self.value = np.array(array, "float64")
         elif type(array) == np.ndarray:
-            self.value = array.reshape((1, -1))
+            self.value = array.reshape(array.size).astype("float64")
         else:
             raise ValueError("Bad argument is passed when creating Value Array")
-        super(APhysValueArray, self).__init__(array, units)
+        super(APhysValueArray, self).__init__(self.value, units)
 
     def instant_plot(self):
         plt.plot(self.value)
         plt.show()
 
+    def __getitem__(self, item):
+        return self.value[item]
+
+    def __len__(self):
+        return self.value.size
+
+    def __contains__(self, item):
+        return item in self.value
+
+
 class Potential(APhysValueArray, EnergyValue):
+    pass
+
+
+class WaveFunction(APhysValueArray, EmptyUnitsValue):
+    pass
+
+
+class Density(APhysValueArray, DensityValue):
     pass
 
