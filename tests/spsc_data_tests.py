@@ -1,107 +1,111 @@
 import unittest
 import src.spsc_data as spsc_data
 import numpy as np
+import random
+import os
+
+
+class TestValue(spsc_data.APhysValue):
+    @property
+    def units_default(self):
+        return "units_default"
+
+    @property
+    def units_options(self):
+        return {"units_1": 10.0, "units_2": 0.1}
+
+
+class AnotherTestValue(spsc_data.APhysValue):
+    @property
+    def units_default(self):
+        return "units_default"
+
+    @property
+    def units_options(self):
+        return {"units_1": 100.0, "units_2": 0.1}
+
+
+class TestValueArray(spsc_data.APhysValueArray, TestValue):
+    pass
+
+
+class AnotherTestValueArray(spsc_data.APhysValueArray, TestValue):
+    pass
+
 
 
 class PhysValueInstantiationTestCase(unittest.TestCase):
-    class TestValue(spsc_data.APhysValue):
-
-        @property
-        def units_default(self):
-            return "units_default"
-
-        @property
-        def units_options(self):
-            return {"units_1": 100.0, "units_2": 0.1}
 
     def test_usual_instantiation(self):
-        value = self.TestValue(5, "units_2")
+        value = TestValue(5, "units_2")
         self.assertEqual(value.value, 5)
         self.assertEqual(value.units, "units_2")
 
     def test_default_units_instantiation(self):
-        value = self.TestValue(3)
+        value = TestValue(3)
         self.assertEqual(value.value, 3)
         self.assertEqual(value.units_default, 'units_default')
 
     def test_wrong_units_instantiation(self):
         with self.assertRaises(ValueError) as context:
-            value = self.TestValue(4, "units_3")
+            value = TestValue(4, "units_3")
 
 
 class PhysValueOperatorTestCase(unittest.TestCase):
-    class TestValue(spsc_data.APhysValue):
-
-        @property
-        def units_default(self):
-            return "units_default"
-
-        @property
-        def units_options(self):
-            return {"units_1": 10.0, "units_2": 0.1}
-
-    class AnotherTestValue(spsc_data.APhysValue):
-        @property
-        def units_default(self):
-            return "units_default"
-
-        @property
-        def units_options(self):
-            return {"units_1": 100.0, "units_2": 0.1}
 
     def test_add_same_units(self):
-        value1 = self.TestValue(5)
-        value2 = self.TestValue(4)
+        value1 = TestValue(5)
+        value2 = TestValue(4)
         value = value1 + value2
         self.assertEqual(value.value, 9)
 
     def test_add_different_units(self):
-        value1 = self.TestValue(5)
-        value2 = self.TestValue(4, "units_1")
+        value1 = TestValue(5)
+        value2 = TestValue(4, "units_1")
         value = value1 + value2
         self.assertEqual(value.value, 45)
 
     def test_add_different_types(self):
-        value1 = self.TestValue(5)
-        value2 = self.AnotherTestValue(5)
+        value1 = TestValue(5)
+        value2 = AnotherTestValue(5)
         with self.assertRaises(ValueError) as context:
             value = value1 + value2
 
     def test_sub_same_units(self):
-        value1 = self.TestValue(5)
-        value2 = self.TestValue(4)
+        value1 = TestValue(5)
+        value2 = TestValue(4)
         value = value1 - value2
         self.assertEqual(value.value, 1)
 
     def test_sub_different_units(self):
-        value1 = self.TestValue(4, "units_1")
-        value2 = self.TestValue(5)
+        value1 = TestValue(4, "units_1")
+        value2 = TestValue(5)
         value = value1 - value2
         self.assertEqual(value.value, 3.5)
 
     def test_sub_different_types(self):
-        value1 = self.TestValue(5)
-        value2 = self.AnotherTestValue(5)
+        value1 = TestValue(5)
+        value2 = AnotherTestValue(5)
         with self.assertRaises(ValueError) as context:
             value = value1 - value2
 
     def test_multiply_int(self):
-        value = self.TestValue(5)
+        value = TestValue(5)
         value = value * 4
         self.assertEqual(value.value, 20)
 
     def test_multiply_float(self):
-        value = self.TestValue(4)
+        value = TestValue(4)
         value = value * 5.5
         self.assertEqual(value.value, 22.0)
 
     def test_multiply_str(self):
-        value = self.TestValue(4)
+        value = TestValue(4)
         with self.assertRaises(ValueError) as context:
             value = value * "str"
 
     def test_str(self):
-        value = self.TestValue(4, "units_2")
+        value = TestValue(4, "units_2")
         value_str = str(value)
         self.assertEqual(value_str, "4 units_2")
 
@@ -207,25 +211,22 @@ class ChargeUnitsConvertTestCase(unittest.TestCase):
 
 class PhysValueArrayInstantiationTestCase(unittest.TestCase):
 
-    class ValueArray(spsc_data.APhysValueArray, spsc_data.EmptyUnitsValue):
-        pass
-
     def test_list_instantiation(self):
-        arr = self.ValueArray([1, 2, 5])
+        arr = TestValueArray([1, 2, 5])
         self.assertEqual(arr.value[0], 1)
         self.assertEqual(arr.value[1], 2)
         self.assertEqual(arr.value[2], 5)
 
     def test_ndarray_instantiation(self):
         ndarr = np.array([1, 3, 5])
-        arr = self.ValueArray(ndarr)
+        arr = TestValueArray(ndarr)
         self.assertEqual(arr.value[0], 1)
         self.assertEqual(arr.value[1], 3)
         self.assertEqual(arr.value[2], 5)
 
     def test_ndarray_2_3_instantiation(self):
         ndarr = np.array([[1, 2, 3], [4, 5, 6]])
-        arr = self.ValueArray(ndarr)
+        arr = TestValueArray(ndarr)
         self.assertEqual(arr.value[0], 1)
         self.assertEqual(arr.value[1], 2)
         self.assertEqual(arr.value[2], 3)
@@ -234,128 +235,186 @@ class PhysValueArrayInstantiationTestCase(unittest.TestCase):
         self.assertEqual(arr.value[5], 6)
 
 
-
 class PhysValueArrayOperatorTestCase(unittest.TestCase):
 
-    class TestValue(spsc_data.APhysValue):
-
-        @property
-        def units_default(self):
-            return "units_default"
-
-        @property
-        def units_options(self):
-            return {"units_1": 10.0, "units_2": 0.1}
-
-    class ValueArray(spsc_data.APhysValueArray, TestValue):
-        pass
-
-    class AnotherValueArray(spsc_data.APhysValueArray, TestValue):
-        pass
-
     def test_get_item(self):
-        arr = self.ValueArray([1, 2, 5])
+        arr = TestValueArray([1, 2, 5])
         self.assertEqual(arr[0], 1)
         self.assertEqual(arr[1], 2)
         self.assertEqual(arr[2], 5)
 
     def test_in(self):
-        arr = self.ValueArray([1, 2, 5])
+        arr = TestValueArray([1, 2, 5])
         self.assertIn(1, arr)
         self.assertNotIn(3, arr)
 
     def test_len(self):
-        arr = self.ValueArray([1, 2, 5])
+        arr = TestValueArray([1, 2, 5])
         self.assertEqual(3, len(arr))
 
     def test_empty_len(self):
-        arr = self.ValueArray([])
+        arr = TestValueArray([])
         self.assertEqual(0, len(arr))
 
     def test_add_same_units(self):
-        arr1 = self.ValueArray([1, 2, 3])
-        arr2 = self.ValueArray([3, 2, 1])
+        arr1 = TestValueArray([1, 2, 3])
+        arr2 = TestValueArray([3, 2, 1])
         arr = arr1 + arr2
         self.assertEqual(arr[0], 4)
         self.assertEqual(arr[1], 4)
         self.assertEqual(arr[2], 4)
 
     def test_add_different_units(self):
-        arr1 = self.ValueArray([1, 2, 3])
-        arr2 = self.ValueArray([3, 2, 1], "units_1")
+        arr1 = TestValueArray([1, 2, 3])
+        arr2 = TestValueArray([3, 2, 1], "units_1")
         arr = arr1 + arr2
         self.assertEqual(arr[0], 31)
         self.assertEqual(arr[1], 22)
         self.assertEqual(arr[2], 13)
 
     def test_add_different_types(self):
-        arr1 = self.ValueArray([1, 2, 3])
-        arr2 = self.AnotherValueArray([3, 2, 1], "units_1")
+        arr1 = TestValueArray([1, 2, 3])
+        arr2 = AnotherTestValueArray([3, 2, 1], "units_1")
         with self.assertRaises(ValueError) as context:
             arr = arr1 + arr2
 
     def test_sub_same_units(self):
-        arr1 = self.ValueArray([1, 2, 3])
-        arr2 = self.ValueArray([3, 2.5, 1])
+        arr1 = TestValueArray([1, 2, 3])
+        arr2 = TestValueArray([3, 2.5, 1])
         arr = arr1 - arr2
         self.assertEqual(arr[0], -2)
         self.assertEqual(arr[1], -0.5)
         self.assertEqual(arr[2], 2)
 
     def test_sub_different_units(self):
-        arr1 = self.ValueArray([1, 2.5, 3])
-        arr2 = self.ValueArray([3, 2, 1], "units_1")
+        arr1 = TestValueArray([1, 2.5, 3])
+        arr2 = TestValueArray([3, 2, 1], "units_1")
         arr = arr1 - arr2
         self.assertEqual(arr[0], -29)
         self.assertEqual(arr[1], -17.5)
         self.assertEqual(arr[2], -7)
 
     def test_sub_different_types(self):
-        arr1 = self.ValueArray([1, 2, 3])
-        arr2 = self.AnotherValueArray([3, 2, 1], "units_1")
+        arr1 = TestValueArray([1, 2, 3])
+        arr2 = AnotherTestValueArray([3, 2, 1], "units_1")
         with self.assertRaises(ValueError) as context:
             arr = arr1 - arr2
 
     def test_multiply_int(self):
-        arr = self.ValueArray([1, -2, 3])
+        arr = TestValueArray([1, -2, 3])
         arr = arr * 4
         self.assertEqual(arr[0], 4)
         self.assertEqual(arr[1], -8)
         self.assertEqual(arr[2], 12)
 
     def test_multiply_float(self):
-        arr = self.ValueArray([1, -2, 3])
+        arr = TestValueArray([1, -2, 3])
         arr = arr * 2.5
         self.assertEqual(arr[0], 2.5)
         self.assertEqual(arr[1], -5)
         self.assertEqual(arr[2], 7.5)
 
+
 class PhysValueArrayConvertUnitsTestCase(unittest.TestCase):
 
-    class TestValue(spsc_data.APhysValue):
-
-        @property
-        def units_default(self):
-            return "units_default"
-
-        @property
-        def units_options(self):
-            return {"units_1": 10.0, "units_2": 0.1}
-
-
-    class TestValueArray(spsc_data.APhysValueArray, TestValue):
-        pass
-
     def test_convert_1(self):
-        arr = self.TestValueArray([1, 4, 5])
+        arr = TestValueArray([1, 4, 5])
         arr.convert_to("units_2")
         self.assertEqual(arr[0], 10)
         self.assertEqual(arr[1], 40)
         self.assertEqual(arr[2], 50)
 
     def test_convert_2(self):
-        arr = self.TestValueArray([1, 4, 5])
+        arr = TestValueArray([1, 4, 5])
         arr.convert_to("units_1")
         self.assertEqual(arr[0], 0.1)
         self.assertEqual(arr[1], 0.4)
         self.assertEqual(arr[2], 0.5)
+
+
+class PhysValueIOTestCase(unittest.TestCase):
+
+    def test_to_dict_int(self):
+        rnd = random.randint(0, 100)
+        value = TestValue(rnd)
+        dct = value.to_dict()
+        self.assertEqual(dct["value"], rnd)
+        self.assertEqual(dct["units"], "units_default")
+
+    def test_to_dict_float(self):
+        rnd = random.uniform(0, 100)
+        value = TestValue(rnd, "units_1")
+        dct = value.to_dict()
+        self.assertEqual(dct["value"], rnd)
+        self.assertEqual(dct["units"], "units_1")
+
+    def test_from_dict_int(self):
+        rnd = random.randint(0, 100)
+        dct = {
+            "value": rnd,
+            "units": "units_1"
+        }
+        value = TestValue.from_dict(dct)
+        self.assertEqual(value.value, rnd)
+        self.assertEqual(value.units, "units_1")
+
+    def test_from_dict_float(self):
+        rnd = random.uniform(0, 100)
+        dct = {
+            "value": rnd,
+            "units": "units_1"
+        }
+        value = TestValue.from_dict(dct)
+        self.assertEqual(value.value, rnd)
+        self.assertEqual(value.units, "units_1")
+
+    def test_import_export(self):
+        value = TestValue(random.uniform(0, 100))
+        test_file_name = "test.yml"
+        value.export_file(test_file_name)
+        new_value = TestValue.import_file(test_file_name)
+        self.assertEqual(value.value, new_value.value)
+        # os.remove(test_file_name)
+
+
+class PhysValueArrayIOTestCase(unittest.TestCase):
+
+    def random_list(self):
+        length = random.randint(1, 10)
+        rnd_lst = []
+        for i in range(length):
+            rnd_lst.append(random.uniform(0, 100))
+        return rnd_lst
+
+    def test_to_dict(self):
+        rnd_lst = self.random_list()
+        arr = TestValueArray(rnd_lst)
+        dct = arr.to_dict()
+        self.assertEqual(len(arr), len(dct["value"]))
+        self.assertEqual(arr.units, dct["units"])
+        for i in range(len(dct["value"])):
+            self.assertEqual(arr[i], dct["value"][i])
+
+    def test_from_dict(self):
+        rnd_lst = self.random_list()
+        dct = {
+            "value": rnd_lst,
+            "units": "units_2"
+        }
+        arr = TestValueArray.from_dict(dct)
+        self.assertEqual(arr.units, dct["units"])
+        self.assertEqual(len(arr), len(dct["value"]))
+        for i in range(len(dct["value"])):
+            self.assertEqual(arr[i], dct["value"][i])
+
+    def test_import_export(self):
+        rnd_lst = self.random_list()
+        arr = TestValueArray(rnd_lst)
+        test_file = "test2.yml"
+        arr.export_file(test_file)
+        new_arr = TestValueArray.import_file(test_file)
+        self.assertEqual(arr.units, new_arr.units)
+        self.assertEqual(len(arr), len(new_arr))
+        for i in range(len(arr)):
+            self.assertEqual(arr[i], new_arr[i])
+        # os.remove(test_file)

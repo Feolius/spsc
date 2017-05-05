@@ -1,9 +1,10 @@
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractproperty
 import numpy as np
 import matplotlib.pyplot as plt
+import spsc_io
 
 
-class APhysValue(object):
+class APhysValue(spsc_io.Default):
     __metaclass__ = ABCMeta
 
     @abstractproperty
@@ -63,6 +64,23 @@ class APhysValue(object):
 
     def __str__(self):
         return str(self.value) + " " + self.units
+
+    def to_dict(self):
+        dct = {
+            "value": self.value,
+            "units": self.units
+        }
+        return dct
+
+    @classmethod
+    def from_dict(cls, dct):
+        if "value" not in dct:
+            raise KeyError("Value key is not found in import dictionary")
+        if "units" in dct:
+            obj = cls(dct["value"], dct["units"])
+        else:
+            obj = cls(dct["value"])
+        return obj
 
 
 class EmptyUnitsValue(APhysValue):
@@ -125,6 +143,7 @@ class ChargeValue(APhysValue):
 
 
 class APhysValueArray(APhysValue):
+    __metaclass__ = ABCMeta
 
     def __init__(self, array, units=False):
         if type(array) == list:
@@ -147,6 +166,23 @@ class APhysValueArray(APhysValue):
 
     def __contains__(self, item):
         return item in self.value
+
+    def to_dict(self):
+        dct = {
+            "value": self.value.tolist(),
+            "units": self.units
+        }
+        return dct
+
+    @classmethod
+    def from_dict(cls, dct):
+        if "value" not in dct:
+            raise KeyError("Value key is not found in import dictionary")
+        if "units" in dct:
+            obj = cls(dct["value"], dct["units"])
+        else:
+            obj = cls(dct["value"])
+        return obj
 
 
 class Potential(APhysValueArray, EnergyValue):
