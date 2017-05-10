@@ -15,7 +15,7 @@ class Default(object):
     __metaclass__ = ABCMeta
 
     @abstractclassmethod
-    def from_dict(cls, dict):
+    def from_dict(cls, dct):
         pass
 
     @abstractmethod

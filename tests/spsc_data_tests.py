@@ -374,7 +374,7 @@ class PhysValueIOTestCase(unittest.TestCase):
         value.export_file(test_file_name)
         new_value = TestValue.import_file(test_file_name)
         self.assertEqual(value.value, new_value.value)
-        # os.remove(test_file_name)
+        os.remove(test_file_name)
 
 
 class PhysValueArrayIOTestCase(unittest.TestCase):
@@ -417,4 +417,4 @@ class PhysValueArrayIOTestCase(unittest.TestCase):
         self.assertEqual(len(arr), len(new_arr))
         for i in range(len(arr)):
             self.assertEqual(arr[i], new_arr[i])
-        # os.remove(test_file)
+        os.remove(test_file)

@@ -1,13 +1,15 @@
 import spsc_data
+import spsc_io
+from abc import ABCMeta, abstractproperty
 
 
-class State(object):
+class State(spsc_io.Default):
 
     def __init__(self):
         self.electron_states = []
         self.static_density = spsc_data.Density([])
         self.density_potential = spsc_data.Potential([])
-        self.length = 0
+        self.length = spsc_data.LengthValue(0)
 
     @classmethod
     def from_dict(cls, dict):
@@ -21,3 +23,144 @@ class State(object):
         if "length" in dict:
             state.length = spsc_data.LengthValue()
 
+    def to_dict(self):
+        pass
+
+
+class AElectronState(spsc_io.Default):
+    __metaclass__ = ABCMeta
+
+    def wave_functions_getter(self):
+        pass
+
+    def wave_functions_setter(self, wave_functions):
+        pass
+
+    wave_functions = abstractproperty(wave_functions_getter, wave_functions_setter)
+
+    def energy_levels_getter(self):
+        pass
+
+    def energy_levels_setter(self, energy_levels):
+        pass
+
+    energy_levels = abstractproperty(energy_levels_getter, energy_levels_setter)
+
+    def static_potential_getter(self):
+        pass
+
+    def static_potential_setter(self, static_potential):
+        pass
+
+    static_potential = abstractproperty(static_potential_getter, static_potential_setter)
+
+    def density_potential_getter(self):
+        pass
+
+    def density_potential_setter(self, density_potential):
+        pass
+
+    density_potential = abstractproperty(density_potential_getter, density_potential_setter)
+
+    def mass_getter(self):
+        pass
+
+    def mass_setter(self, mass):
+        pass
+
+    mass = abstractproperty(mass_getter, mass_setter)
+
+
+class ElectronStatesSimple(AElectronState):
+
+    _wave_functions = []
+
+    def wave_functions_getter(self):
+        return self._wave_functions
+
+    def wave_functions_setter(self, wave_functions):
+        self._wave_functions = wave_functions
+
+    wave_functions = property(wave_functions_getter, wave_functions_setter)
+
+    _energy_levels = []
+
+    def energy_levels_getter(self):
+        return self._energy_levels
+
+    def energy_levels_setter(self, energy_levels):
+        self._energy_levels = energy_levels
+
+    energy_levels = property(energy_levels_getter, energy_levels_setter)
+
+    _static_potential = spsc_data.Potential([])
+
+    def static_potential_getter(self):
+        return self._static_potential
+
+    def static_potential_setter(self, static_potential):
+        self._static_potential = static_potential
+
+    static_potential = property(static_potential_getter, static_potential_setter)
+
+    _density_potential = spsc_data.Potential([])
+
+    def density_potential_getter(self):
+        return self._density_potential
+
+    def density_potential_setter(self, density_potential):
+        self._density_potential = density_potential
+
+    density_potential = property(density_potential_getter, density_potential_setter)
+
+    _mass = spsc_data.MassValue(0)
+
+    def mass_getter(self):
+        return self._mass
+
+    def mass_setter(self, mass):
+        self._mass = mass
+
+    mass = property(mass_getter, mass_setter)
+
+    @classmethod
+    def from_dict(cls, dct):
+        electron_sate = cls()
+        granularity = None
+        if "static_potential" in dct:
+            electron_sate.static_potential = spsc_data.Potential.from_dict(dct["static_potential"])
+            granularity = len(electron_sate.static_potential)
+        if "density_potential" in dct:
+            electron_sate.density_potential = spsc_data.Potential.from_dict(dct["density_potential"])
+            if granularity != len(electron_sate.density_potential):
+                raise ImportError("Incoming data arrays have different lengths in Electron State dump.")
+        if "wave_functions" in dct and type(dct["wave_functions"]) is list:
+            wave_functions = []
+            for wave_function_dct in dct["wave_functions"]:
+                wave_function = spsc_data.WaveFunction.from_dict(wave_function_dct)
+                if granularity != len(wave_function):
+                    raise ImportError("Incoming data arrays have different lengths in Electron State dump.")
+                wave_functions.append(wave_function)
+            electron_sate.wave_functions = wave_functions
+        if "energy_levels" in dct and type(dct["energy_levels"]) is list:
+            energy_levels = []
+            for energy_level in dct["energy_levels"]:
+                energy_levels.append(spsc_data.EnergyValue.from_dict(energy_level))
+        if "mass" in dct:
+            electron_sate.mass = spsc_data.MassValue.from_dict(dct["mass"])
+        if len(electron_sate.wave_functions) != len(electron_sate.energy_levels):
+            raise ImportError("Number of energy levels and wave functions doesn't match in Electron State dump.")
+
+    def to_dict(self):
+        dct = {
+            "static_potential": self.static_potential.to_dict(),
+            "density_potential": self.density_potential.to_dict(),
+            "wave_functions": [],
+            "energy_levels": [],
+            "mass": self.mass.to_dict()
+        }
+        for wave_function in self.wave_functions:
+            dct["wave_functions"].append(wave_function.to_dict())
+        for energy_level in self.energy_levels:
+            dct["energy_levels"].append(energy_level.to_dict())
+        return dct

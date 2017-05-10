@@ -1,8 +1,6 @@
 import numpy as np
 
-a = np.array([1, 2, 3, 4, 5, 6])
+a = {"fdgdf": "dfdfgs", "test": []}
 
-b = a.reshape((2,3))
-b = b.reshape(a.size)
-c = a.shape
-print b[2]
+if "test" in a and type(a["test"]) is list:
+    print "good"

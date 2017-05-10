@@ -15,8 +15,8 @@ class APhysValue(spsc_io.Default):
     def units_options(self):
         return {}
 
-    def __init__(self, value, units=False):
-        if not units:
+    def __init__(self, value, units=None):
+        if units is None:
             units = self.units_default
         if self._is_valid_units(units):
             self.units = units
@@ -145,7 +145,7 @@ class ChargeValue(APhysValue):
 class APhysValueArray(APhysValue):
     __metaclass__ = ABCMeta
 
-    def __init__(self, array, units=False):
+    def __init__(self, array, units=None):
         if type(array) == list:
             self.value = np.array(array, "float64")
         elif type(array) == np.ndarray:
