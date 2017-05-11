@@ -33,7 +33,6 @@ class AnotherTestValueArray(spsc_data.APhysValueArray, TestValue):
     pass
 
 
-
 class PhysValueInstantiationTestCase(unittest.TestCase):
 
     def test_usual_instantiation(self):

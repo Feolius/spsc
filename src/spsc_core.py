@@ -4,7 +4,6 @@ from abc import ABCMeta, abstractproperty
 
 
 class State(spsc_io.Default):
-
     def __init__(self):
         self.electron_states = []
         self.static_density = spsc_data.Density([])
@@ -72,7 +71,6 @@ class AElectronState(spsc_io.Default):
 
 
 class ElectronStateSimple(AElectronState):
-
     _wave_functions = []
 
     def wave_functions_getter(self):
@@ -183,6 +181,8 @@ class ElectronStateSimple(AElectronState):
             static_potential_equal = self.static_potential == other.static_potential
             density_potential_equal = self.density_potential == other.density_potential
             mass_equal = self.mass == other.mass
-            equal = wave_functions_equal and energy_levels_equal and static_potential_equal \
-                    and density_potential_equal and mass_equal
+            equal = wave_functions_equal and energy_levels_equal and static_potential_equal and density_potential_equal and mass_equal
         return equal
+
+    def __ne__(self, other):
+        return not self == other

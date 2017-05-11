@@ -71,6 +71,9 @@ class APhysValue(spsc_io.Default):
             equal = self.value == other.value and self.units == other.units
         return equal
 
+    def __ne__(self, other):
+        return not self == other
+
     def to_dict(self):
         dct = {
             "value": self.value,
@@ -194,6 +197,9 @@ class APhysValueArray(APhysValue):
         if type(other) == self.__class__:
             equal = np.array_equal(self.value, other.value) and self.units == other.units
         return equal
+
+    def __ne__(self, other):
+        return not self == other
 
     @classmethod
     def from_dict(cls, dct):
