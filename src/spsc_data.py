@@ -65,6 +65,12 @@ class APhysValue(spsc_io.Default):
     def __str__(self):
         return str(self.value) + " " + self.units
 
+    def __eq__(self, other):
+        equal = False
+        if type(other) == self.__class__:
+            equal = self.value == other.value and self.units == other.units
+        return equal
+
     def to_dict(self):
         dct = {
             "value": self.value,
@@ -82,12 +88,21 @@ class APhysValue(spsc_io.Default):
             obj = cls(dct["value"])
         return obj
 
+    @classmethod
+    def get_all_units(cls):
+        units = []
+        obj = cls(0)
+        units.append(obj.units_default)
+        units.extend(obj.units_options.keys())
+        return units
+
 
 class EmptyUnitsValue(APhysValue):
-
+    @property
     def units_default(self):
         return ""
 
+    @property
     def units_options(self):
         return {}
 
@@ -119,7 +134,7 @@ class EnergyValue(APhysValue):
 
     @property
     def units_options(self):
-        return {"eV": (1 / (6.24150965 * 10 ** 11)), "J" : float(10 ** 7)}
+        return {"eV": (1 / (6.24150965 * 10 ** 11)), "J": float(10 ** 7)}
 
 
 class DensityValue(APhysValue):
@@ -174,6 +189,12 @@ class APhysValueArray(APhysValue):
         }
         return dct
 
+    def __eq__(self, other):
+        equal = False
+        if type(other) == self.__class__:
+            equal = np.array_equal(self.value, other.value) and self.units == other.units
+        return equal
+
     @classmethod
     def from_dict(cls, dct):
         if "value" not in dct:
@@ -183,6 +204,14 @@ class APhysValueArray(APhysValue):
         else:
             obj = cls(dct["value"])
         return obj
+
+    @classmethod
+    def get_all_units(cls):
+        units = []
+        obj = cls([])
+        units.append(obj.units_default)
+        units.extend(obj.units_options.keys())
+        return units
 
 
 class Potential(APhysValueArray, EnergyValue):

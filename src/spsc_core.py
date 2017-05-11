@@ -71,7 +71,7 @@ class AElectronState(spsc_io.Default):
     mass = abstractproperty(mass_getter, mass_setter)
 
 
-class ElectronStatesSimple(AElectronState):
+class ElectronStateSimple(AElectronState):
 
     _wave_functions = []
 
@@ -146,10 +146,12 @@ class ElectronStatesSimple(AElectronState):
             energy_levels = []
             for energy_level in dct["energy_levels"]:
                 energy_levels.append(spsc_data.EnergyValue.from_dict(energy_level))
+            electron_sate.energy_levels = energy_levels
         if "mass" in dct:
             electron_sate.mass = spsc_data.MassValue.from_dict(dct["mass"])
         if len(electron_sate.wave_functions) != len(electron_sate.energy_levels):
             raise ImportError("Number of energy levels and wave functions doesn't match in Electron State dump.")
+        return electron_sate
 
     def to_dict(self):
         dct = {
@@ -164,3 +166,23 @@ class ElectronStatesSimple(AElectronState):
         for energy_level in self.energy_levels:
             dct["energy_levels"].append(energy_level.to_dict())
         return dct
+
+    def __eq__(self, other):
+        equal = False
+        if type(other) == self.__class__:
+            wave_functions_equal = False
+            if len(self.wave_functions) == len(other.wave_functions):
+                wave_functions_equal = True
+                for i in range(len(self.wave_functions)):
+                    wave_functions_equal = wave_functions_equal and self.wave_functions[i] == other.wave_functions[i]
+            energy_levels_equal = False
+            if len(self.energy_levels) == len(other.energy_levels):
+                energy_levels_equal = True
+                for i in range(len(self.energy_levels)):
+                    energy_levels_equal = energy_levels_equal and self.energy_levels[i] == other.energy_levels[i]
+            static_potential_equal = self.static_potential == other.static_potential
+            density_potential_equal = self.density_potential == other.density_potential
+            mass_equal = self.mass == other.mass
+            equal = wave_functions_equal and energy_levels_equal and static_potential_equal \
+                    and density_potential_equal and mass_equal
+        return equal

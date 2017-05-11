@@ -50,6 +50,13 @@ class PhysValueInstantiationTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             value = TestValue(4, "units_3")
 
+    def test_get_all_units(self):
+        units = TestValue.get_all_units()
+        test_units = ["units_default", "units_1", "units_2"]
+        self.assertEqual(len(units), len(test_units))
+        for i in range(len(units)):
+            self.assertIn(units[i], test_units)
+
 
 class PhysValueOperatorTestCase(unittest.TestCase):
 
@@ -108,6 +115,17 @@ class PhysValueOperatorTestCase(unittest.TestCase):
         value = TestValue(4, "units_2")
         value_str = str(value)
         self.assertEqual(value_str, "4 units_2")
+
+    def test_equal(self):
+        value1 = TestValue(5, "units_1")
+        value2 = TestValue(5, "units_1")
+        value3 = TestValue(4, "units_1")
+        value4 = TestValue(5, "units_2")
+        value5 = TestValue(4, "units_2")
+        self.assertEqual(value1, value2)
+        self.assertNotEqual(value1, value3)
+        self.assertNotEqual(value1, value4)
+        self.assertNotEqual(value1, value5)
 
 
 class LengthValueConvertTestCase(unittest.TestCase):
@@ -234,6 +252,13 @@ class PhysValueArrayInstantiationTestCase(unittest.TestCase):
         self.assertEqual(arr.value[4], 5)
         self.assertEqual(arr.value[5], 6)
 
+    def test_get_all_units(self):
+        units = TestValueArray.get_all_units()
+        test_units = ["units_default", "units_1", "units_2"]
+        self.assertEqual(len(units), len(test_units))
+        for i in range(len(units)):
+            self.assertIn(units[i], test_units)
+
 
 class PhysValueArrayOperatorTestCase(unittest.TestCase):
 
@@ -314,6 +339,17 @@ class PhysValueArrayOperatorTestCase(unittest.TestCase):
         self.assertEqual(arr[1], -5)
         self.assertEqual(arr[2], 7.5)
 
+    def test_equal(self):
+        arr1 = TestValueArray([1, 3, 4])
+        arr2 = TestValueArray([1, 3, 4])
+        arr3 = TestValueArray([1, 3, 4], "units_2")
+        arr4 = TestValueArray([1, 3, 5])
+        arr5 = TestValueArray([1, 3])
+        self.assertEqual(arr1, arr2)
+        self.assertNotEqual(arr1, arr3)
+        self.assertNotEqual(arr1, arr4)
+        self.assertNotEqual(arr1, arr5)
+
 
 class PhysValueArrayConvertUnitsTestCase(unittest.TestCase):
 
@@ -373,7 +409,7 @@ class PhysValueIOTestCase(unittest.TestCase):
         test_file_name = "test.yml"
         value.export_file(test_file_name)
         new_value = TestValue.import_file(test_file_name)
-        self.assertEqual(value.value, new_value.value)
+        self.assertEqual(value, new_value)
         os.remove(test_file_name)
 
 
@@ -413,8 +449,5 @@ class PhysValueArrayIOTestCase(unittest.TestCase):
         test_file = "test2.yml"
         arr.export_file(test_file)
         new_arr = TestValueArray.import_file(test_file)
-        self.assertEqual(arr.units, new_arr.units)
-        self.assertEqual(len(arr), len(new_arr))
-        for i in range(len(arr)):
-            self.assertEqual(arr[i], new_arr[i])
+        self.assertEqual(arr, new_arr)
         os.remove(test_file)
