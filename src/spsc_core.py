@@ -3,18 +3,92 @@ import spsc_io
 from abc import ABCMeta, abstractproperty
 
 
-class State(spsc_io.Default):
-    def __init__(self):
-        self.electron_states = []
-        self.static_density = spsc_data.Density([])
-        self.density_potential = spsc_data.Potential([])
-        self.length = spsc_data.LengthValue(0)
+class AState(spsc_io.Default):
+    __metaclass__ = ABCMeta
+
+    def electron_states_getter(self):
+        pass
+
+    def electron_states_setter(self, electron_states):
+        pass
+
+    electron_states = abstractproperty(electron_states_getter, electron_states_setter)
+
+    def static_density_getter(self):
+        pass
+
+    def static_density_setter(self, static_density):
+        pass
+
+    static_density = abstractproperty(static_density_getter, static_density_setter)
+
+    def density_potential_getter(self):
+        pass
+
+    def density_potential_setter(self, density_potential):
+        pass
+
+    density_potential = abstractproperty(density_potential_getter, density_potential_setter)
+
+    def length_potential_getter(self):
+        pass
+
+    def length_potential_setter(self, length):
+        pass
+
+    length = abstractproperty(length_potential_getter, length_potential_setter)
+
+
+class StateSimple(AState):
+
+    _electron_states = []
+
+    def electron_states_getter(self):
+        return self._electron_states
+
+    def electron_states_setter(self, electron_states):
+        self._electron_states = electron_states
+
+    electron_states = property(electron_states_getter, electron_states_setter)
+
+    _static_density = spsc_data.Density([])
+
+    def static_density_getter(self):
+        return self._static_density
+
+    def static_density_setter(self, static_density):
+        self._static_density = static_density
+
+    static_density = property(static_density_getter, static_density_setter)
+
+    _density_potential = spsc_data.Potential([])
+
+    def density_potential_getter(self):
+        return self._density_potential
+
+    def density_potential_setter(self, density_potential):
+        self._density_potential = density_potential
+
+    density_potential = property(density_potential_getter, density_potential_setter)
+
+    _length = spsc_data.LengthValue(0)
+
+    def length_potential_getter(self):
+        return self._length
+
+    def length_potential_setter(self, length):
+        self._length = length
+
+    length = property(length_potential_getter, length_potential_setter)
 
     @classmethod
-    def from_dict(cls, dict):
+    def from_dict(cls, dct):
         state = cls()
-        if "electron_states" in dict:
-            pass
+        if "electron_states" in dct:
+            electron_states = []
+            for electron_state_dct in dct["electron_states"]:
+                electron_states.append(ElectronStateSimple.from_dict(electron_state_dct))
+            state.electron_states = electron_states
         if "static_density" in dict:
             state.static_density = spsc_data.Density(dict["static_density"])
         if "density_potential" in dict:
@@ -68,6 +142,9 @@ class AElectronState(spsc_io.Default):
         pass
 
     mass = abstractproperty(mass_getter, mass_setter)
+
+    def _is_granularity_consistent(self):
+        granularity = len(self.static_potential)
 
 
 class ElectronStateSimple(AElectronState):
