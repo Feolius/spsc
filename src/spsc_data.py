@@ -201,6 +201,9 @@ class APhysValueArray(APhysValue):
     def __ne__(self, other):
         return not self == other
 
+    def __delitem__(self, key):
+        self.value = np.delete(self.value, key)
+
     @classmethod
     def from_dict(cls, dct):
         if "value" not in dct:

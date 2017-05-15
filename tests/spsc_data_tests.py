@@ -5,6 +5,15 @@ import random
 import os
 
 
+def random_list(length=None):
+    if length is None:
+        length = random.randrange(1, 10)
+    rnd_lst = []
+    for i in range(length):
+        rnd_lst.append(random.uniform(0, 100))
+    return rnd_lst
+
+
 class TestValue(spsc_data.APhysValue):
     @property
     def units_default(self):
@@ -349,6 +358,22 @@ class PhysValueArrayOperatorTestCase(unittest.TestCase):
         self.assertNotEqual(arr1, arr4)
         self.assertNotEqual(arr1, arr5)
 
+    def test_non_equal(self):
+        arr1 = TestValueArray([1, 3, 4])
+        arr2 = TestValueArray([1, 3])
+        arr3 = TestValueArray([1, 2, 5])
+        self.assertNotEqual(arr1, arr2)
+        self.assertNotEqual(arr1, arr3)
+
+    def test_delete(self):
+        original_list = random_list()
+        arr = TestValueArray(original_list)
+        rnd_int = random.randrange(0, len(original_list))
+        del arr[rnd_int]
+        del original_list[rnd_int]
+        new_arr = TestValueArray(original_list)
+        self.assertEqual(arr, new_arr)
+
 
 class PhysValueArrayConvertUnitsTestCase(unittest.TestCase):
 
@@ -414,15 +439,8 @@ class PhysValueIOTestCase(unittest.TestCase):
 
 class PhysValueArrayIOTestCase(unittest.TestCase):
 
-    def random_list(self):
-        length = random.randint(1, 10)
-        rnd_lst = []
-        for i in range(length):
-            rnd_lst.append(random.uniform(0, 100))
-        return rnd_lst
-
     def test_to_dict(self):
-        rnd_lst = self.random_list()
+        rnd_lst = random_list()
         arr = TestValueArray(rnd_lst)
         dct = arr.to_dict()
         self.assertEqual(len(arr), len(dct["value"]))
@@ -431,7 +449,7 @@ class PhysValueArrayIOTestCase(unittest.TestCase):
             self.assertEqual(arr[i], dct["value"][i])
 
     def test_from_dict(self):
-        rnd_lst = self.random_list()
+        rnd_lst = random_list()
         dct = {
             "value": rnd_lst,
             "units": "units_2"
@@ -443,7 +461,7 @@ class PhysValueArrayIOTestCase(unittest.TestCase):
             self.assertEqual(arr[i], dct["value"][i])
 
     def test_import_export(self):
-        rnd_lst = self.random_list()
+        rnd_lst = random_list()
         arr = TestValueArray(rnd_lst)
         test_file = "test2.yml"
         arr.export_file(test_file)

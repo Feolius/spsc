@@ -30,13 +30,13 @@ class AState(spsc_io.Default):
 
     density_potential = abstractproperty(density_potential_getter, density_potential_setter)
 
-    def length_potential_getter(self):
+    def length_getter(self):
         pass
 
-    def length_potential_setter(self, length):
+    def length_setter(self, length):
         pass
 
-    length = abstractproperty(length_potential_getter, length_potential_setter)
+    length = abstractproperty(length_getter, length_setter)
 
 
 class StateSimple(AState):
@@ -73,13 +73,13 @@ class StateSimple(AState):
 
     _length = spsc_data.LengthValue(0)
 
-    def length_potential_getter(self):
+    def length_getter(self):
         return self._length
 
-    def length_potential_setter(self, length):
+    def length_setter(self, length):
         self._length = length
 
-    length = property(length_potential_getter, length_potential_setter)
+    length = property(length_getter, length_setter)
 
     @classmethod
     def from_dict(cls, dct):
@@ -89,15 +89,60 @@ class StateSimple(AState):
             for electron_state_dct in dct["electron_states"]:
                 electron_states.append(ElectronStateSimple.from_dict(electron_state_dct))
             state.electron_states = electron_states
-        if "static_density" in dict:
-            state.static_density = spsc_data.Density(dict["static_density"])
-        if "density_potential" in dict:
-            state.density_potential = spsc_data.Potential(dict["density_potential"])
-        if "length" in dict:
-            state.length = spsc_data.LengthValue()
+        if "static_density" in dct:
+            state.static_density = spsc_data.Density.from_dict(dct["static_density"])
+        if "density_potential" in dct:
+            state.density_potential = spsc_data.Potential.from_dict(dct["density_potential"])
+        if "length" in dct:
+            state.length = spsc_data.LengthValue.from_dict(dct["length"])
+        if not state._is_granularity_consistent():
+            raise ImportError("Electron State data have different granularity in State dump")
+        return state
 
     def to_dict(self):
-        pass
+        dct = {
+            "electron_states": [],
+            "static_density": self.static_density.to_dict(),
+            "density_potential": self.density_potential.to_dict(),
+            "length": self.length.to_dict()
+        }
+        for electron_state in self.electron_states:
+            dct["electron_states"].append(electron_state.to_dict())
+        return dct
+
+    def _is_granularity_consistent(self):
+        consistent = True
+        if len(self.electron_states) > 0:
+            granularity = self.electron_states[0].get_granularity()
+            for i in range(len(self.electron_states) - 1):
+                consistent = consistent and granularity == self.electron_states[i + 1].get_granularity()
+        return consistent
+
+    def get_granularity(self):
+        granularity = 0
+        if self._is_granularity_consistent():
+            if self.electron_states:
+                granularity = self.electron_states[0].get_granularity()
+        else:
+            raise StandardError("State granularity is inconsistent")
+        return granularity
+
+    def __eq__(self, other):
+        equal = False
+        if type(other) == self.__class__:
+            electron_states_equal = False
+            if len(self.electron_states) == len(other.electron_states):
+                electron_states_equal = True
+                for i in range(len(self.electron_states)):
+                    electron_states_equal = electron_states_equal and self.electron_states[i] == other.electron_states[i]
+            static_density_equal = self.static_density == other.static_density
+            density_potential_equal = self.density_potential == other.density_potential
+            length_equal = self.length == other.length
+            equal = electron_states_equal and static_density_equal and density_potential_equal and length_equal
+        return equal
+
+    def __ne__(self, other):
+        return not self == other
 
 
 class AElectronState(spsc_io.Default):
@@ -142,9 +187,6 @@ class AElectronState(spsc_io.Default):
         pass
 
     mass = abstractproperty(mass_getter, mass_setter)
-
-    def _is_granularity_consistent(self):
-        granularity = len(self.static_potential)
 
 
 class ElectronStateSimple(AElectronState):
@@ -201,20 +243,14 @@ class ElectronStateSimple(AElectronState):
     @classmethod
     def from_dict(cls, dct):
         electron_sate = cls()
-        granularity = None
         if "static_potential" in dct:
             electron_sate.static_potential = spsc_data.Potential.from_dict(dct["static_potential"])
-            granularity = len(electron_sate.static_potential)
         if "density_potential" in dct:
             electron_sate.density_potential = spsc_data.Potential.from_dict(dct["density_potential"])
-            if granularity != len(electron_sate.density_potential):
-                raise ImportError("Incoming data arrays have different lengths in Electron State dump.")
         if "wave_functions" in dct and type(dct["wave_functions"]) is list:
             wave_functions = []
             for wave_function_dct in dct["wave_functions"]:
                 wave_function = spsc_data.WaveFunction.from_dict(wave_function_dct)
-                if granularity != len(wave_function):
-                    raise ImportError("Incoming data arrays have different lengths in Electron State dump.")
                 wave_functions.append(wave_function)
             electron_sate.wave_functions = wave_functions
         if "energy_levels" in dct and type(dct["energy_levels"]) is list:
@@ -224,7 +260,9 @@ class ElectronStateSimple(AElectronState):
             electron_sate.energy_levels = energy_levels
         if "mass" in dct:
             electron_sate.mass = spsc_data.MassValue.from_dict(dct["mass"])
-        if len(electron_sate.wave_functions) != len(electron_sate.energy_levels):
+        if not electron_sate._is_granularity_consistent():
+            raise ImportError("Incoming data arrays have different lengths in Electron State dump.")
+        if not electron_sate._is_wave_functions_consistent():
             raise ImportError("Number of energy levels and wave functions doesn't match in Electron State dump.")
         return electron_sate
 
@@ -263,3 +301,22 @@ class ElectronStateSimple(AElectronState):
 
     def __ne__(self, other):
         return not self == other
+
+    def _is_granularity_consistent(self):
+        granularity = len(self.static_potential)
+        consistent = granularity == len(self.density_potential)
+        for wave_function in self.wave_functions:
+            consistent = consistent and granularity == len(wave_function)
+        return consistent
+
+    def _is_wave_functions_consistent(self):
+        return len(self.wave_functions) == len(self.energy_levels)
+
+    def get_granularity(self):
+        if self._is_granularity_consistent():
+            granularity = len(self.static_potential)
+        else:
+            raise StandardError("Electron state granularity is inconsistent")
+        return granularity
+
+
