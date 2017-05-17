@@ -317,7 +317,7 @@ class StateSimpleOperatorTestCase(unittest.TestCase):
         self.assertNotEqual(state1, state2)
 
         state2 = copy.deepcopy(state1)
-        state2.density_potential += random_value_array("Potential", len(state2.density_potential))
+        state2.density_potential += random_value_array("Potential", len(state2.density_potential), state2.density_potential.units)
         self.assertNotEqual(state1, state2)
 
         state2 = copy.deepcopy(state1)

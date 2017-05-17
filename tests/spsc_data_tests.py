@@ -66,6 +66,18 @@ class PhysValueInstantiationTestCase(unittest.TestCase):
             self.assertIn(units[i], test_units)
 
 
+class PhysValueConvertTestCase(unittest.TestCase):
+
+    def test_convert(self):
+        value = TestValue(5)
+        value.convert_to("units_1")
+        self.assertEqual(value.value, 0.5)
+        self.assertEqual(value.units, "units_1")
+        value.convert_to("units_2")
+        self.assertEqual(value.value, 50)
+        self.assertEqual(value.units, "units_2")
+
+
 class PhysValueOperatorTestCase(unittest.TestCase):
 
     def test_add_same_units(self):
@@ -373,6 +385,27 @@ class PhysValueArrayOperatorTestCase(unittest.TestCase):
         del original_list[rnd_int]
         new_arr = TestValueArray(original_list)
         self.assertEqual(arr, new_arr)
+
+    def test_append(self):
+        list1 = random_list()
+        list2 = random_list()
+        arr1 = TestValueArray(list1)
+        arr2 = TestValueArray(list2)
+        arr1.append(arr2)
+        list_union = list1 + list2
+        union_arr = TestValueArray(list_union)
+        self.assertEqual(union_arr, arr1)
+
+        list1 = random_list()
+        list2 = random_list()
+        arr1 = TestValueArray(list1)
+        arr2 = TestValueArray(list2)
+        arr2.convert_to("units_1")
+        arr1.append(arr2)
+        list_union = list1 + list2
+        union_arr = TestValueArray(list_union)
+        # Cannot compare arrays directly because of float operations it may not be true.
+        self.assertTrue(np.allclose(union_arr.value, arr1.value))
 
 
 class PhysValueArrayConvertUnitsTestCase(unittest.TestCase):

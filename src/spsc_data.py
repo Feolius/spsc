@@ -39,6 +39,7 @@ class APhysValue(spsc_io.Default):
             if new_units != self.units_default:
                 new_value = new_value * (1 / self.units_options[new_units])
             self.value = new_value
+            self.units = new_units
 
     def __add__(self, other):
         if type(other) == self.__class__:
@@ -203,6 +204,14 @@ class APhysValueArray(APhysValue):
 
     def __delitem__(self, key):
         self.value = np.delete(self.value, key)
+
+    def append(self, other):
+        if type(other) == self.__class__:
+            if other.units != self.units:
+                other.convert_to(self.units)
+            self.value = np.append(self.value, other.value)
+        else:
+            raise ValueError("Invalid argument type given for Value Array append method")
 
     @classmethod
     def from_dict(cls, dct):

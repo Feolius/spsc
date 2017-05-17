@@ -1,7 +1,22 @@
 import spsc_data
 import spsc_io
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractproperty, abstractmethod
 
+
+class ASolver(object):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, state):
+        self.state = state
+
+    @abstractmethod
+    def solve(self):
+        pass
+
+class ShrodSolver(ASolver):
+
+    def solve(self):
+        pass
 
 class AState(spsc_io.Default):
     __metaclass__ = ABCMeta
