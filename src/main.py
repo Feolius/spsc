@@ -1,6 +1,5 @@
-import numpy as np
+import spsc_data_generator
 
-a = {"fdgdf": "dfdfgs", "test": []}
-
-if "test" in a and type(a["test"]) is list:
-    print "good"
+a = [1]
+if a:
+    print 'dgds'

@@ -13,10 +13,12 @@ class ASolver(object):
     def solve(self):
         pass
 
-class ShrodSolver(ASolver):
+
+class ShrodSolverSimple(ASolver):
 
     def solve(self):
         pass
+
 
 class AState(spsc_io.Default):
     __metaclass__ = ABCMeta
