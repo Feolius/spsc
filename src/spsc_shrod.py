@@ -1,5 +1,8 @@
 import spsc_data
 from abc import ABCMeta, abstractproperty, abstractmethod
+import numpy as np
+import spsc_constants as constants
+import math
 
 
 class ASolutionStrategy(object):
@@ -69,12 +72,12 @@ class ASolutionIteration(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, potential, mass, length):
-        self.potential = potential
-        self.mass = mass
-        self.length = length
+        self.potential = potential.convert_to(potential.units_default)
+        self.mass = mass.convert_to(potential.units_default)
+        self.length = length.convert_to(potential.units_default)
 
     @abstractmethod
-    def solve(self, E):
+    def solve(self, E, solution_start):
         pass
 
 
@@ -86,14 +89,35 @@ class ASolutionIterationFactory(object):
         pass
 
 
-class SolutionIterationSingleWell(ASolutionIteration):
+class SolutionIterationFlatPotential(ASolutionIteration):
 
-    def solve(self, E):
-        pass
+    def solve(self, E, solution_start):
+        E.convert_to(E.units_default)
+        N = len(self.potential)
+        solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
+        gamma = 2 * self.mass * (self.length ** 2) / (constants.h_plank ** 2)
+        (A, B) = self._get_initial_AB(E, solution_start)
+        potential_step = self.potential[0]
+        for i in range(N):
+            x = i / (N - 1)
+            if self.potential[i] == potential_step:
+              if E < potential_step:
+                  k = math.sqrt((potential_step - E) * gamma)
 
 
-class SolutionIterationSingleWellFactory(ASolutionIterationFactory):
+
+        return solution
+
+    def _get_initial_AB(self, E, solution_start):
+        # TODO need to implement this method properly
+        return solution_start[0], 0
+
+
+
+
+
+class SolutionIterationFlatPotentialFactory(ASolutionIterationFactory):
 
     def get_iteration(self, potential, mass, length):
-        return SolutionIterationSingleWell(potential, mass, length)
+        return SolutionIterationFlatPotential(potential, mass, length)
 

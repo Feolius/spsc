@@ -288,6 +288,14 @@ class PhysValueArrayOperatorTestCase(unittest.TestCase):
         self.assertEqual(arr[1], 2)
         self.assertEqual(arr[2], 5)
 
+    def test_set_item(self):
+        length = random.randint(1, 10)
+        arr = TestValueArray(random_list(length))
+        rnd_index = random.randrange(1, length)
+        rnd_value = random.uniform(1, 100)
+        arr[rnd_index] = rnd_value
+        self.assertEqual(arr[rnd_index], rnd_value)
+
     def test_in(self):
         arr = TestValueArray([1, 2, 5])
         self.assertIn(1, arr)
