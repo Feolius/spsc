@@ -174,7 +174,9 @@ class APhysValueArray(APhysValue):
         super(APhysValueArray, self).__init__(self.value, units)
 
     def instant_plot(self):
+        plt.gcf().clear()
         plt.plot(self.value)
+        plt.ion()
         plt.show()
 
     def __getitem__(self, item):

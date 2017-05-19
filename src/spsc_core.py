@@ -1,5 +1,6 @@
 import spsc_data
 import spsc_io
+import spsc_shrod
 from abc import ABCMeta, abstractproperty, abstractmethod
 
 
@@ -17,7 +18,16 @@ class ASolver(object):
 class ShrodSolverSimple(ASolver):
 
     def solve(self):
-        pass
+        E_start = spsc_data.EnergyValue(0.001, "eV")
+        E_end = spsc_data.EnergyValue(1, "eV")
+        dE = spsc_data.EnergyValue(0.001, "eV")
+        iteration_factory = spsc_shrod.SolutionIterationFlatPotentialFactory()
+        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, iteration_factory)
+        potential = self.state.electron_states[0].static_potential
+        mass = self.state.electron_states[0].mass
+        length = self.state.length
+        solution = solution_strategy.solve(potential, mass, length)
+
 
 
 class AState(spsc_io.Default):
@@ -189,14 +199,6 @@ class AElectronState(spsc_io.Default):
 
     static_potential = abstractproperty(static_potential_getter, static_potential_setter)
 
-    def density_potential_getter(self):
-        pass
-
-    def density_potential_setter(self, density_potential):
-        pass
-
-    density_potential = abstractproperty(density_potential_getter, density_potential_setter)
-
     def mass_getter(self):
         pass
 
@@ -239,14 +241,6 @@ class ElectronStateSimple(AElectronState):
 
     _density_potential = spsc_data.Potential([])
 
-    def density_potential_getter(self):
-        return self._density_potential
-
-    def density_potential_setter(self, density_potential):
-        self._density_potential = density_potential
-
-    density_potential = property(density_potential_getter, density_potential_setter)
-
     _mass = spsc_data.MassValue(0)
 
     def mass_getter(self):
@@ -262,8 +256,6 @@ class ElectronStateSimple(AElectronState):
         electron_sate = cls()
         if "static_potential" in dct:
             electron_sate.static_potential = spsc_data.Potential.from_dict(dct["static_potential"])
-        if "density_potential" in dct:
-            electron_sate.density_potential = spsc_data.Potential.from_dict(dct["density_potential"])
         if "wave_functions" in dct and type(dct["wave_functions"]) is list:
             wave_functions = []
             for wave_function_dct in dct["wave_functions"]:
@@ -286,7 +278,6 @@ class ElectronStateSimple(AElectronState):
     def to_dict(self):
         dct = {
             "static_potential": self.static_potential.to_dict(),
-            "density_potential": self.density_potential.to_dict(),
             "wave_functions": [],
             "energy_levels": [],
             "mass": self.mass.to_dict()
@@ -311,9 +302,8 @@ class ElectronStateSimple(AElectronState):
                 for i in range(len(self.energy_levels)):
                     energy_levels_equal = energy_levels_equal and self.energy_levels[i] == other.energy_levels[i]
             static_potential_equal = self.static_potential == other.static_potential
-            density_potential_equal = self.density_potential == other.density_potential
             mass_equal = self.mass == other.mass
-            equal = wave_functions_equal and energy_levels_equal and static_potential_equal and density_potential_equal and mass_equal
+            equal = wave_functions_equal and energy_levels_equal and static_potential_equal and mass_equal
         return equal
 
     def __ne__(self, other):
@@ -321,7 +311,7 @@ class ElectronStateSimple(AElectronState):
 
     def _is_granularity_consistent(self):
         granularity = len(self.static_potential)
-        consistent = granularity == len(self.density_potential)
+        consistent = True
         for wave_function in self.wave_functions:
             consistent = consistent and granularity == len(wave_function)
         return consistent

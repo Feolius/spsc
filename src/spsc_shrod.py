@@ -1,8 +1,9 @@
 import spsc_data
-from abc import ABCMeta, abstractproperty, abstractmethod
+from abc import ABCMeta, abstractmethod
 import numpy as np
 import spsc_constants as constants
-import math
+import copy
+import matplotlib.pyplot as plt
 
 
 class ASolutionStrategy(object):
@@ -31,21 +32,27 @@ class AIterableSolutionStrategy(ASolutionStrategy):
     def solve(self, potential, mass, length):
         self.E_start.convert_to(self.dE.units)
         self.E_end.convert_to(self.dE.units)
-        E_current = self.E_start
+        E_current = copy.deepcopy(self.E_start)
         iteration = self.iteration_factory.get_iteration(potential, mass, length)
         solutions = []
         while E_current.value < self.E_end.value:
-            solution_candidate = iteration.solve(E_current)
+            solution_candidate = iteration.solve(E_current, (10.0 ** -20, 0))
             if self._is_solution(solution_candidate):
                 solutions.append((E_current, solution_candidate[0]))
             self.solution_history.append(solution_candidate)
+            plt.gcf().clear()
+            plt.plot(solution_candidate[0].value)
+            plt.ion()
+            plt.pause(1)
+            plt.show()
+            solution_candidate[0].instant_plot()
             E_current += self.dE
             self._count += 1
+            print self._count
         return solutions
 
 
 class IterableSolutionStrategySymmetricWell(AIterableSolutionStrategy):
-
     def _is_solution(self, solution):
         is_solution = False
         if self.solution_history:
@@ -72,9 +79,12 @@ class ASolutionIteration(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, potential, mass, length):
-        self.potential = potential.convert_to(potential.units_default)
-        self.mass = mass.convert_to(potential.units_default)
-        self.length = length.convert_to(potential.units_default)
+        potential.convert_to(potential.units_default)
+        mass.convert_to(mass.units_default)
+        length.convert_to(length.units_default)
+        self.potential = potential.value
+        self.mass = mass.value
+        self.length = length.value
 
     @abstractmethod
     def solve(self, E, solution_start):
@@ -90,21 +100,28 @@ class ASolutionIterationFactory(object):
 
 
 class SolutionIterationFlatPotential(ASolutionIteration):
-
     def solve(self, E, solution_start):
         E.convert_to(E.units_default)
+        E = E.value
         N = len(self.potential)
         solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
-        gamma = 2 * self.mass * (self.length ** 2) / (constants.h_plank ** 2)
+        gamma = 2.0 * self.mass * (self.length ** 2) / (constants.h_plank ** 2)
         (A, B) = self._get_initial_AB(E, solution_start)
-        potential_step = self.potential[0]
-        for i in range(N):
-            x = i / (N - 1)
-            if self.potential[i] == potential_step:
-              if E < potential_step:
-                  k = math.sqrt((potential_step - E) * gamma)
-
-
+        potential_level = self.potential[0]
+        for i in range(N * 2 / 3):
+            x = float(i) / (N - 1)
+            if self.potential[i] != potential_level:
+                AB_transition_matrix = self._get_AB_transition_matrix(potential_level, self.potential[i], E, x)
+                (A, B) = np.dot(AB_transition_matrix, np.array([A, B]))
+                potential_level = self.potential[i]
+            if E < potential_level:
+                k = np.sqrt((potential_level - E) * gamma)
+                solution[0][i] = A * np.exp(k * x) + B * np.exp(-k * x)
+                solution[1][i] = A * k * np.exp(k * x) - B * k * np.exp(-k * x)
+            else:
+                k = np.sqrt((E - potential_level) * gamma)
+                solution[0][i] = A * np.sin(k * x) + B * np.cos(k * x)
+                solution[1][i] = A * k * np.cos(k * x) - B * k * np.sin(k * x)
 
         return solution
 
@@ -112,12 +129,33 @@ class SolutionIterationFlatPotential(ASolutionIteration):
         # TODO need to implement this method properly
         return solution_start[0], 0
 
-
-
+    def _get_AB_transition_matrix(self, prev_potential_level, new_potential_level, E, x):
+        transition_matrix = np.zeros((2, 2))
+        gamma = 2 * self.mass * (self.length ** 2) / (constants.h_plank ** 2)
+        if E < prev_potential_level and E < new_potential_level:
+            k1 = np.sqrt((prev_potential_level - E) * gamma)
+            k2 = np.sqrt((new_potential_level - E) * gamma)
+            transition_matrix[0][0] = np.exp(k1 * x) * np.exp(-k2 * x) * ((k1 / k2) + 1) / 2
+            transition_matrix[0][1] = np.exp(-k1 * x) * np.exp(-k2 * x) * (1 - (k1 / k2)) / 2
+            transition_matrix[1][0] = np.exp(k1 * x) * np.exp(k2 * x) * (1 - (k1 / k2)) / 2
+            transition_matrix[1][1] = np.exp(-k1 * x) * np.exp(k2 * x) * ((k1 / k2) + 1) / 2
+        elif E > prev_potential_level:
+            k1 = np.sqrt((E - prev_potential_level) * gamma)
+            k2 = np.sqrt((new_potential_level - E) * gamma)
+            transition_matrix[0][0] = (k1 / (2 * k2) * np.cos(k1 * x) + np.sin(k1 * x) / 2) * np.exp(-k2 * x)
+            transition_matrix[0][1] = (-k1 / (2 * k2) * np.sin(k1 * x) + np.cos(k1 * x) / 2) * np.exp(-k2 * x)
+            transition_matrix[1][0] = (-k1 / (2 * k2) * np.cos(k1 * x) + np.sin(k1 * x) / 2) * np.exp(k2 * x)
+            transition_matrix[1][1] = (k1 / (2 * k2) * np.sin(k1 * x) + np.cos(k1 * x) / 2) * np.exp(k2 * x)
+        else:
+            k1 = np.sqrt((prev_potential_level - E) * gamma)
+            k2 = np.sqrt((E - new_potential_level) * gamma)
+            transition_matrix[0][0] = np.exp(k1 * x) * (k1 / k2 * np.cos(k2 * x) + np.sin(k2 * x))
+            transition_matrix[0][1] = np.exp(-k1 * x) * (np.sin(k2 * x) - k1 / k2 * np.cos(k2 * x))
+            transition_matrix[1][0] = np.exp(k1 * x) * (np.cos(k2 * x) - k1 / (k2) * np.sin(k2 * x))
+            transition_matrix[1][1] = np.exp(-k1 * x) * (k1 / k2 * np.sin(k2 * x) + np.cos(k2 * x))
+        return transition_matrix
 
 
 class SolutionIterationFlatPotentialFactory(ASolutionIterationFactory):
-
     def get_iteration(self, potential, mass, length):
         return SolutionIterationFlatPotential(potential, mass, length)
-

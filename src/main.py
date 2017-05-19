@@ -1,5 +1,7 @@
+import spsc_core
 import spsc_data_generator
 
-a = [1]
-if a:
-    print 'dgds'
+state = spsc_core.StateSimple.import_file("data/single_well26nm.yml")
+solver = spsc_core.ShrodSolverSimple(state)
+solver.solve()
+

@@ -48,13 +48,11 @@ def random_electron_state_simple(granularity=None):
     for i in range(energy_levels_number):
         wave_functions.append(random_value_array("WaveFunction", granularity))
     static_potential = random_value_array("Potential", granularity, rnd_energy_units)
-    density_potential = random_value_array("Potential", granularity, rnd_energy_units)
     mass = random_value("MassValue")
     electron_state = spsc_core.ElectronStateSimple()
     electron_state.energy_levels = energy_levels
     electron_state.wave_functions = wave_functions
     electron_state.static_potential = static_potential
-    electron_state.density_potential = density_potential
     electron_state.mass = mass
     return electron_state
 
@@ -71,13 +69,11 @@ def random_electron_state_simple_dict(granularity=None):
     for i in range(energy_levels_number):
         wave_functions.append(random_value_array("WaveFunction", granularity).to_dict())
     static_potential = random_value_array("Potential", granularity, rnd_energy_units).to_dict()
-    density_potential = random_value_array("Potential", granularity, rnd_energy_units).to_dict()
     mass = random_value("MassValue").to_dict()
     dct = {
         "energy_levels": energy_levels,
         "wave_functions": wave_functions,
         "static_potential": static_potential,
-        "density_potential": density_potential,
         "mass": mass
     }
     return dct
@@ -123,10 +119,6 @@ class ElectronStateSimpleHelpersTestCase(unittest.TestCase):
         del electron_state.static_potential[rnd_int]
         self.assertFalse(electron_state._is_granularity_consistent())
 
-        electron_state = copy.deepcopy(electron_state_original)
-        del electron_state.density_potential[rnd_int]
-        self.assertFalse(electron_state._is_granularity_consistent())
-
         for i in range(len(electron_state_original.wave_functions)):
             electron_state = copy.deepcopy(electron_state_original)
             del electron_state.wave_functions[i][rnd_int]
@@ -166,11 +158,6 @@ class ElectronStateSimpleOperatorTestCase(unittest.TestCase):
         self.assertNotEqual(electron_state1, electron_state2)
         electron_state2 = copy.deepcopy(electron_state1)
 
-        electron_state2.density_potential += random_value_array("Potential", len(electron_state2.density_potential),
-                                                                electron_state2.density_potential.units)
-        self.assertNotEqual(electron_state1, electron_state2)
-        electron_state2 = copy.deepcopy(electron_state1)
-
         electron_state2.static_potential += random_value_array("Potential", len(electron_state2.static_potential),
                                                                electron_state2.static_potential.units)
         self.assertNotEqual(electron_state1, electron_state2)
@@ -204,8 +191,6 @@ class ElectronStateSimpleIOTestCase(unittest.TestCase):
         self.assertEqual(len(dct["energy_levels"]), len(dct["wave_functions"]))
         dct_static_potential = spsc_data.Potential.from_dict(dct["static_potential"])
         self.assertEqual(dct_static_potential, electron_state.static_potential)
-        dct_density_potential = spsc_data.Potential.from_dict(dct["density_potential"])
-        self.assertEqual(dct_density_potential, electron_state.density_potential)
         dct_mass = spsc_data.MassValue.from_dict(dct["mass"])
         self.assertEqual(dct_mass, electron_state.mass)
 
@@ -221,8 +206,6 @@ class ElectronStateSimpleIOTestCase(unittest.TestCase):
             dict_energy_level = spsc_data.EnergyValue.from_dict(electron_state_dict["energy_levels"][i])
             self.assertEqual(electron_state.energy_levels[i], dict_energy_level)
         self.assertEqual(len(electron_state.wave_functions), len(electron_state.energy_levels))
-        dict_density_potential = spsc_data.Potential.from_dict(electron_state_dict["density_potential"])
-        self.assertEqual(electron_state.density_potential, dict_density_potential)
         dict_static_potential = spsc_data.Potential.from_dict(electron_state_dict["static_potential"])
         self.assertEqual(electron_state.static_potential, dict_static_potential)
         dict_mass = spsc_data.MassValue.from_dict(electron_state_dict["mass"])
@@ -257,12 +240,6 @@ class ElectronStateSimpleIOTestCase(unittest.TestCase):
 
         electron_state = copy.deepcopy(electron_state_original)
         del electron_state.static_potential[rnd_int]
-        electron_state.export_file(test_file)
-        with self.assertRaises(ImportError) as context:
-            electron_state_imported = spsc_core.ElectronStateSimple.import_file(test_file)
-
-        electron_state = copy.deepcopy(electron_state_original)
-        del electron_state.density_potential[rnd_int]
         electron_state.export_file(test_file)
         with self.assertRaises(ImportError) as context:
             electron_state_imported = spsc_core.ElectronStateSimple.import_file(test_file)
