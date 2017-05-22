@@ -3,7 +3,6 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import spsc_constants as constants
 import copy
-import matplotlib.pyplot as plt
 
 
 class ASolutionStrategy(object):
@@ -17,10 +16,11 @@ class ASolutionStrategy(object):
 class AIterableSolutionStrategy(ASolutionStrategy):
     __metaclass__ = ABCMeta
 
-    def __init__(self, E_start, E_end, dE, iteration_factory):
+    def __init__(self, E_start, E_end, dE, solutions_limit, iteration_factory):
         self.E_start = E_start
         self.E_end = E_end
         self.dE = dE
+        self.solutions_limit = solutions_limit
         self.iteration_factory = iteration_factory
         self.solution_history = []
         self._count = 0
@@ -39,13 +39,10 @@ class AIterableSolutionStrategy(ASolutionStrategy):
             solution_candidate = iteration.solve(E_current, (10.0 ** -20, 0))
             if self._is_solution(solution_candidate):
                 solutions.append((E_current, solution_candidate[0]))
+                if len(solutions) == self.solutions_limit:
+                    break
             self.solution_history.append(solution_candidate)
-            plt.gcf().clear()
-            plt.plot(solution_candidate[0].value)
-            plt.ion()
-            plt.pause(1)
-            plt.show()
-            solution_candidate[0].instant_plot()
+
             E_current += self.dE
             self._count += 1
             print self._count

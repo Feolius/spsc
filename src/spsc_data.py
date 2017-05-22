@@ -176,7 +176,6 @@ class APhysValueArray(APhysValue):
     def instant_plot(self):
         plt.gcf().clear()
         plt.plot(self.value)
-        plt.ion()
         plt.show()
 
     def __getitem__(self, item):
@@ -235,6 +234,17 @@ class APhysValueArray(APhysValue):
         units.append(obj.units_default)
         units.extend(obj.units_options.keys())
         return units
+
+    def mirror(self):
+        length = len(self)
+        left_part = self.value[0:length / 2]
+        right_part = left_part[::-1]
+        if length % 2:
+            left_part = np.append(left_part, self.value[length / 2])
+        self.value = np.append(left_part, right_part)
+
+
+
 
 
 class Potential(APhysValueArray, EnergyValue):

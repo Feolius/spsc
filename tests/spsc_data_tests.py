@@ -394,6 +394,9 @@ class PhysValueArrayOperatorTestCase(unittest.TestCase):
         new_arr = TestValueArray(original_list)
         self.assertEqual(arr, new_arr)
 
+
+class PhysValueArrayHelpersTestCase(unittest.TestCase):
+
     def test_append(self):
         list1 = random_list()
         list2 = random_list()
@@ -414,6 +417,25 @@ class PhysValueArrayOperatorTestCase(unittest.TestCase):
         union_arr = TestValueArray(list_union)
         # Cannot compare arrays directly because of float operations it may not be true.
         self.assertTrue(np.allclose(union_arr.value, arr1.value))
+
+    def test_mirror(self):
+        list = random_list(5)
+        arr = TestValueArray(list)
+        arr.mirror()
+        self.assertEqual(list[0], arr[0])
+        self.assertEqual(list[1], arr[1])
+        self.assertEqual(list[2], arr[2])
+        self.assertEqual(list[1], arr[3])
+        self.assertEqual(list[0], arr[4])
+        list = random_list(6)
+        arr = TestValueArray(list)
+        arr.mirror()
+        self.assertEqual(list[0], arr[0])
+        self.assertEqual(list[1], arr[1])
+        self.assertEqual(list[2], arr[2])
+        self.assertEqual(list[2], arr[3])
+        self.assertEqual(list[1], arr[4])
+        self.assertEqual(list[0], arr[5])
 
 
 class PhysValueArrayConvertUnitsTestCase(unittest.TestCase):

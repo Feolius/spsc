@@ -2,6 +2,7 @@ import spsc_data
 import spsc_io
 import spsc_shrod
 from abc import ABCMeta, abstractproperty, abstractmethod
+import matplotlib.pyplot as plt
 
 
 class ASolver(object):
@@ -19,14 +20,26 @@ class ShrodSolverSimple(ASolver):
 
     def solve(self):
         E_start = spsc_data.EnergyValue(0.001, "eV")
-        E_end = spsc_data.EnergyValue(1, "eV")
+        E_end = spsc_data.EnergyValue(0.05, "eV")
         dE = spsc_data.EnergyValue(0.001, "eV")
         iteration_factory = spsc_shrod.SolutionIterationFlatPotentialFactory()
-        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, iteration_factory)
+        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 2, iteration_factory)
         potential = self.state.electron_states[0].static_potential
         mass = self.state.electron_states[0].mass
         length = self.state.length
-        solution = solution_strategy.solve(potential, mass, length)
+        solutions = solution_strategy.solve(potential, mass, length)
+        for solution in solutions:
+            self.state.electron_states[0].wave_functions.append(solution[1].mirror())
+            plt.gcf().clear()
+            plt.plot(solution[1].value)
+            plt.pause(1)
+            plt.show()
+
+        # plt.gcf().clear()
+        # plt.plot(solution_candidate[0].value)
+        # plt.ion()
+        # plt.pause(1)
+        # plt.show()
 
 
 
