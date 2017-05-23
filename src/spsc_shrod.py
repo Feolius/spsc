@@ -72,6 +72,21 @@ class IterableSolutionStrategySymmetricWell(AIterableSolutionStrategy):
         return is_solution
 
 
+class IterableSolutionStrategyNonSymmetricWell(AIterableSolutionStrategy):
+    def _is_solution(self, solution):
+        is_solution = False
+        if self.solution_history:
+            prev_solution = self.solution_history[-1]
+            middle_index = len(solution[0]) / 2
+            prev_w = prev_solution[1][middle_index] * prev_solution[2][middle_index] - \
+                     prev_solution[3][middle_index] * prev_solution[0][middle_index]
+            w = solution[1][middle_index] * solution[2][middle_index] - \
+                     solution[3][middle_index] * solution[0][middle_index]
+            if w * prev_w < 0:
+                is_solution = True
+        return is_solution
+
+
 class ASolutionIteration(object):
     __metaclass__ = ABCMeta
 
@@ -156,3 +171,16 @@ class SolutionIterationFlatPotential(ASolutionIteration):
 class SolutionIterationFlatPotentialFactory(ASolutionIterationFactory):
     def get_iteration(self, potential, mass, length):
         return SolutionIterationFlatPotential(potential, mass, length)
+
+
+class SolutionIterationSlopePotential(ASolutionIteration):
+    def solve(self, E, solution_start):
+        E.convert_to(E.units_default)
+        E = E.value
+        N = len(self.potential)
+        solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))),
+                    spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
+        return solution
+
+    def _get_initial_AB(self, E, solution_start):
+        pass
