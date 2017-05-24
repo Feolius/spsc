@@ -20,10 +20,10 @@ class ShrodSolverSimple(ASolver):
 
     def solve(self):
         E_start = spsc_data.EnergyValue(0.001, "eV")
-        E_end = spsc_data.EnergyValue(0.05, "eV")
+        E_end = spsc_data.EnergyValue(0.04, "eV")
         dE = spsc_data.EnergyValue(0.001, "eV")
-        iteration_factory = spsc_shrod.SolutionIterationFlatPotentialFactory()
-        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 2, iteration_factory)
+        iteration_factory = spsc_shrod.SolutionIterationSlopePotentialFactory()
+        solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 2, iteration_factory)
         potential = self.state.electron_states[0].static_potential
         mass = self.state.electron_states[0].mass
         length = self.state.length

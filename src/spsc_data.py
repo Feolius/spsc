@@ -161,6 +161,26 @@ class ChargeValue(APhysValue):
         return {"C": 2997924580.0}
 
 
+class ElectricFieldValue(APhysValue):
+    @property
+    def units_default(self):
+        return "statV_per_cm"
+
+    @property
+    def units_options(self):
+        return {"V_per_m": float(10 ** 6)}
+
+
+class VoltageValue(APhysValue):
+    @property
+    def units_default(self):
+        return "statV"
+
+    @property
+    def units_options(self):
+        return {"V": float(10 ** 8)}
+
+
 class APhysValueArray(APhysValue):
     __metaclass__ = ABCMeta
 

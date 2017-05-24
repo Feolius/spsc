@@ -247,6 +247,32 @@ class ChargeUnitsConvertTestCase(unittest.TestCase):
         self.assertEqual(value.value, 5 * 2997924580)
 
 
+class ElectricFieldUnitsConvertTestCase(unittest.TestCase):
+
+    def test_statV_per_cm_to_V_per_m(self):
+        value = spsc_data.ElectricFieldValue(5.5)
+        value.convert_to("V_per_m")
+        self.assertEqual(value.value, 5.5 * 10 ** -6)
+
+    def test_statV_per_cm_to_statV_per_cm(self):
+        value = spsc_data.ElectricFieldValue(5.4)
+        value.convert_to("statV_per_cm")
+        self.assertEqual(value.value, 5.4)
+
+
+class VoltageUnitsConvertTestCase(unittest.TestCase):
+
+    def test_V_to_statV(self):
+        value = spsc_data.VoltageValue(4.4, "V")
+        value.convert_to("statV")
+        self.assertEqual(value.value, 4.4 * 10 ** 8)
+
+    def test_statV_to_statV(self):
+        value = spsc_data.VoltageValue(4.4)
+        value.convert_to("statV")
+        self.assertEqual(value.value, 4.4)
+
+
 class PhysValueArrayInstantiationTestCase(unittest.TestCase):
 
     def test_list_instantiation(self):

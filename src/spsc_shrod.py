@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import spsc_constants as constants
 import copy
+import scipy.special as special
 
 
 class ASolutionStrategy(object):
@@ -81,7 +82,7 @@ class IterableSolutionStrategyNonSymmetricWell(AIterableSolutionStrategy):
             prev_w = prev_solution[1][middle_index] * prev_solution[2][middle_index] - \
                      prev_solution[3][middle_index] * prev_solution[0][middle_index]
             w = solution[1][middle_index] * solution[2][middle_index] - \
-                     solution[3][middle_index] * solution[0][middle_index]
+                solution[3][middle_index] * solution[0][middle_index]
             if w * prev_w < 0:
                 is_solution = True
         return is_solution
@@ -91,16 +92,18 @@ class ASolutionIteration(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, potential, mass, length):
-        potential.convert_to(potential.units_default)
-        mass.convert_to(mass.units_default)
-        length.convert_to(length.units_default)
-        self.potential = potential.value
-        self.mass = mass.value
-        self.length = length.value
+        self.potential = potential
+        self.mass = mass
+        self.length = length
 
     @abstractmethod
     def solve(self, E, solution_start):
         pass
+
+    def _reset_to_default_units(self):
+        self.potential.convert_to(self.potential.units_default)
+        self.mass.convert_to(self.mass.units_default)
+        self.length.convert_to(self.length.units_default)
 
 
 class ASolutionIterationFactory(object):
@@ -113,11 +116,12 @@ class ASolutionIterationFactory(object):
 
 class SolutionIterationFlatPotential(ASolutionIteration):
     def solve(self, E, solution_start):
+        self._reset_to_default_units()
         E.convert_to(E.units_default)
         E = E.value
         N = len(self.potential)
         solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
-        gamma = 2.0 * self.mass * (self.length ** 2) / (constants.h_plank ** 2)
+        gamma = 2.0 * self.mass.value * (self.length.value ** 2) / (constants.h_plank ** 2)
         (A, B) = self._get_initial_AB(E, solution_start)
         potential_level = self.potential[0]
         for i in range(N * 2 / 3):
@@ -143,7 +147,7 @@ class SolutionIterationFlatPotential(ASolutionIteration):
 
     def _get_AB_transition_matrix(self, prev_potential_level, new_potential_level, E, x):
         transition_matrix = np.zeros((2, 2))
-        gamma = 2 * self.mass * (self.length ** 2) / (constants.h_plank ** 2)
+        gamma = 2 * self.mass.value * (self.length.value ** 2) / (constants.h_plank ** 2)
         if E < prev_potential_level and E < new_potential_level:
             k1 = np.sqrt((prev_potential_level - E) * gamma)
             k2 = np.sqrt((new_potential_level - E) * gamma)
@@ -174,13 +178,99 @@ class SolutionIterationFlatPotentialFactory(ASolutionIterationFactory):
 
 
 class SolutionIterationSlopePotential(ASolutionIteration):
+    SLOPE_RESOLUTION_DOTS_NUM = 100
+
+    def __init__(self, potential, mass, length):
+        super(SolutionIterationSlopePotential, self).__init__(potential, mass, length)
+        self.slope = spsc_data.ElectricFieldValue(0)
+        self.x0 = spsc_data.LengthValue(0)
+        self.eps0 = spsc_data.EnergyValue(0)
+        self._reset_to_default_units()
+        # Calculate slope
+        energy_difference = self.potential[SolutionIterationSlopePotential.SLOPE_RESOLUTION_DOTS_NUM - 1] - \
+                            self.potential[0]
+        energy_difference = spsc_data.EnergyValue(energy_difference)
+        voltage_difference = energy_difference.value / constants.e
+        length_piece = self.length.value * (SolutionIterationSlopePotential.SLOPE_RESOLUTION_DOTS_NUM - 1) / (len(self.potential) - 1)
+        self.slope.value = voltage_difference / length_piece
+        self.slope.convert_to("V_per_m")
+
+        self.x0.value = np.power(constants.h_plank ** 2 / (2 * self.mass.value * constants.e * self.slope.value), float(1) / 3)
+        self.eps0.value = constants.e * self.slope.value * self.x0.value
+
+    def _reset_to_default_units(self):
+        super(SolutionIterationSlopePotential, self)._reset_to_default_units()
+        self.slope.convert_to(self.slope.units_default)
+        self.x0.convert_to(self.x0.units_default)
+        self.eps0.convert_to(self.eps0.units_default)
+
     def solve(self, E, solution_start):
+        self._reset_to_default_units()
         E.convert_to(E.units_default)
         E = E.value
         N = len(self.potential)
         solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))),
                     spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
+        potential_threshold = abs(2.0 * constants.e * self.slope.value * self.length.value / (len(self.potential) - 1))
+
+        (A, B) = self._get_initial_left_AB(E, solution_start[0], solution_start[1])
+        U = self._get_U(0)
+        for i in range(N * 2 / 3):
+            if i > 0 and abs(self.potential[i] - self.potential[i-1]) > potential_threshold:
+                (A, B) = self._get_AB(E, i, solution[0][i - 1], solution[1][i - 1])
+                U = self._get_U(i)
+            airy_argument = self._get_airy_argument(E, U, i)
+            airy = special.airy(airy_argument)
+            solution[0][i] = A * airy[0] + B * airy[2]
+            solution[1][i] = A * airy[1] + B * airy[3]
+
+        (A, B) = self._get_initial_right_AB(E, solution_start[2], solution_start[3])
+        U = self._get_U(N - 1)
+        for i in range(N - 1, N / 3, -1):
+            if i < N - 1 and abs(self.potential[i] - self.potential[i-1]) > potential_threshold:
+                (A, B) = self._get_AB(E, i, solution[0][i - 1], solution[1][i - 1])
+                U = self._get_U(i)
+            airy_argument = self._get_airy_argument(E, U, i)
+            airy = special.airy(airy_argument)
+            solution[0][i] = A * airy[0] + B * airy[2]
+            solution[1][i] = A * airy[1] + B * airy[3]
         return solution
 
-    def _get_initial_AB(self, E, solution_start):
-        pass
+    def _get_airy_argument(self, E, U, index):
+        self._reset_to_default_units()
+        x = self.length.value * index / (len(self.potential) - 1)
+        E.convert_to(E.units_default)
+        U.convert_to(E.units)
+        return (x / self.x0.value) - (E.value - U.value) / self.eps0.value
+
+    def _get_U(self, index):
+        self._reset_to_default_units()
+        potential_value = self.potential[index]
+        x = self.length.value * index / (len(self.potential) - 1)
+        U = spsc_data.EnergyValue(potential_value - self.slope.value * x * constants.e)
+        return U
+
+    def _get_initial_left_AB(self, E, func_value, der_value):
+        return self._get_AB(E, 0, func_value, der_value)
+
+    def _get_initial_right_AB(self, E, func_value, der_value):
+        index = len(self.potential) - 1
+        U = self._get_U(index)
+        airy_arg = self._get_airy_argument(E, U, index)
+        airy = special.airy(airy_arg)
+        A = func_value / airy[0]
+        return A, 0
+
+    def _get_AB(self, E, index, func_value, der_value):
+        U = self._get_U(index)
+        airy_arg = self._get_airy_argument(E, U, index)
+        airy = special.airy(airy_arg)
+        lin_matrix = np.array([[airy[0], airy[2]], [airy[1], airy[3]]])
+        lin_right = np.array([[func_value], [der_value]])
+        AB = np.linalg.solve(lin_matrix, lin_right)
+        return AB[0], AB[1]
+
+
+class SolutionIterationSlopePotentialFactory(ASolutionIterationFactory):
+    def get_iteration(self, potential, mass, length):
+        return SolutionIterationSlopePotential(potential, mass, length)
