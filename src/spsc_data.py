@@ -272,7 +272,15 @@ class Potential(APhysValueArray, EnergyValue):
 
 
 class WaveFunction(APhysValueArray, EmptyUnitsValue):
-    pass
+
+    def normalize(self):
+        square = 0
+        h = 1.0 / (len(self) - 1)
+        for i in range(len(self)):
+            square += self[i] * self[i] * h
+        self.value = self.value / square ** 0.5
+
+
 
 
 class Density(APhysValueArray, DensityValue):

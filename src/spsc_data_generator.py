@@ -7,9 +7,9 @@ import copy
 
 def single_well(well_length):
     state = spsc_core.StateSimple()
+    granularity = well_length.value * 10
     length = well_length * 3
     length.convert_to("nm")
-    granularity = length.value * 10
     potential = spsc_data.Potential(np.ones((granularity,), "float64"), "eV")
     potential.append(spsc_data.Potential(np.zeros((granularity,), "float64"), "eV"))
     potential.append(spsc_data.Potential(np.ones((granularity + 1,), "float64"), "eV"))

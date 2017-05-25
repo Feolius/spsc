@@ -4,13 +4,14 @@ import numpy as np
 import spsc_constants as constants
 import copy
 import scipy.special as special
+import matplotlib.pyplot as plt
 
 
 class ASolutionStrategy(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def solve(self, potential, mass, length):
+    def solve(self, potential, mass, length, solution_start):
         pass
 
 
@@ -27,23 +28,36 @@ class AIterableSolutionStrategy(ASolutionStrategy):
         self._count = 0
 
     @abstractmethod
-    def _is_solution(self, solution):
+    def _is_solution(self, solution_candidate):
         pass
 
-    def solve(self, potential, mass, length):
+    @abstractmethod
+    def _prepare_wave_function(self, solution_candidate):
+        pass
+
+    def solve(self, potential, mass, length, solution_start):
         self.E_start.convert_to(self.dE.units)
         self.E_end.convert_to(self.dE.units)
         E_current = copy.deepcopy(self.E_start)
         iteration = self.iteration_factory.get_iteration(potential, mass, length)
         solutions = []
         while E_current.value < self.E_end.value:
-            solution_candidate = iteration.solve(E_current, (10.0 ** -20, 0))
+            solution_candidate = iteration.solve(E_current, solution_start)
             if self._is_solution(solution_candidate):
-                solutions.append((E_current, solution_candidate[0]))
+                wave_function = self._prepare_wave_function(solution_candidate)
+                # plt.gcf().clear()
+                # plt.plot(wave_function)
+                # potential.convert_to("eV")
+                # plt.plot(potential.value)
+                # E_current.convert_to("eV")
+                # print "Energy:", E_current.value
+                # plt.show()
+                solutions.append((E_current, wave_function))
                 if len(solutions) == self.solutions_limit:
                     break
             self.solution_history.append(solution_candidate)
 
+            E_current.convert_to(self.dE.units)
             E_current += self.dE
             self._count += 1
             print self._count
@@ -51,17 +65,17 @@ class AIterableSolutionStrategy(ASolutionStrategy):
 
 
 class IterableSolutionStrategySymmetricWell(AIterableSolutionStrategy):
-    def _is_solution(self, solution):
+    def _is_solution(self, solution_candidate):
         is_solution = False
         if self.solution_history:
             prev_solution = self.solution_history[-1]
-            middle_index = len(solution[0]) / 2
-            middle_der = solution[1][middle_index]
+            middle_index = len(solution_candidate[0]) / 2
+            middle_der = solution_candidate[1][middle_index]
             prev_middle_der = prev_solution[1][middle_index]
             is_der_changed = False
             if middle_der * prev_middle_der < 0:
                 is_der_changed = True
-            middle_func = solution[0][middle_index]
+            middle_func = solution_candidate[0][middle_index]
             prev_middle_func = prev_solution[0][middle_index]
             is_func_changed = False
             if middle_func * prev_middle_func < 0:
@@ -72,20 +86,50 @@ class IterableSolutionStrategySymmetricWell(AIterableSolutionStrategy):
                 is_solution = True
         return is_solution
 
+    def _prepare_wave_function(self, solution_candidate):
+        wave_function = solution_candidate[0].mirror()
+        wave_function.normalize()
+        return wave_function
+
 
 class IterableSolutionStrategyNonSymmetricWell(AIterableSolutionStrategy):
-    def _is_solution(self, solution):
+    def _is_solution(self, solution_candidate):
         is_solution = False
         if self.solution_history:
             prev_solution = self.solution_history[-1]
-            middle_index = len(solution[0]) / 2
+            middle_index = len(solution_candidate[0]) / 2
             prev_w = prev_solution[1][middle_index] * prev_solution[2][middle_index] - \
                      prev_solution[3][middle_index] * prev_solution[0][middle_index]
-            w = solution[1][middle_index] * solution[2][middle_index] - \
-                solution[3][middle_index] * solution[0][middle_index]
+            w = solution_candidate[1][middle_index] * solution_candidate[2][middle_index] - \
+                solution_candidate[3][middle_index] * solution_candidate[0][middle_index]
             if w * prev_w < 0:
                 is_solution = True
+                plt.gcf().clear()
+                a = np.concatenate((prev_solution[0][0:middle_index + 1], np.zeros((middle_index,))))
+                plt.plot(a)
+                plt.show()
+                plt.gcf().clear()
+                a = np.concatenate((np.zeros((middle_index + 1,)), prev_solution[2][middle_index + 1:], ))
+                plt.plot(a)
+                plt.show()
+                plt.gcf().clear()
+                a = np.concatenate((solution_candidate[0][0:middle_index + 1], np.zeros((middle_index,))))
+                plt.plot(a)
+                plt.show()
+                plt.gcf().clear()
+                a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:],))
+                plt.plot(a)
+                plt.show()
         return is_solution
+
+    def _prepare_wave_function(self, solution_candidate):
+        middle_index = len(solution_candidate[0]) / 2
+        k = solution_candidate[0][middle_index] / solution_candidate[2][middle_index]
+        wave_function_arr = np.concatenate(
+            (solution_candidate[0].value[:middle_index + 1], k * solution_candidate[2].value[middle_index + 1:]))
+        wave_function = spsc_data.WaveFunction(wave_function_arr)
+        wave_function.normalize()
+        return wave_function
 
 
 class ASolutionIteration(object):
@@ -193,7 +237,6 @@ class SolutionIterationSlopePotential(ASolutionIteration):
         voltage_difference = energy_difference.value / constants.e
         length_piece = self.length.value * (SolutionIterationSlopePotential.SLOPE_RESOLUTION_DOTS_NUM - 1) / (len(self.potential) - 1)
         self.slope.value = voltage_difference / length_piece
-        self.slope.convert_to("V_per_m")
 
         self.x0.value = np.power(constants.h_plank ** 2 / (2 * self.mass.value * constants.e * self.slope.value), float(1) / 3)
         self.eps0.value = constants.e * self.slope.value * self.x0.value
@@ -207,7 +250,6 @@ class SolutionIterationSlopePotential(ASolutionIteration):
     def solve(self, E, solution_start):
         self._reset_to_default_units()
         E.convert_to(E.units_default)
-        E = E.value
         N = len(self.potential)
         solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))),
                     spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
@@ -232,8 +274,8 @@ class SolutionIterationSlopePotential(ASolutionIteration):
                 U = self._get_U(i)
             airy_argument = self._get_airy_argument(E, U, i)
             airy = special.airy(airy_argument)
-            solution[0][i] = A * airy[0] + B * airy[2]
-            solution[1][i] = A * airy[1] + B * airy[3]
+            solution[2][i] = A * airy[0] + B * airy[2]
+            solution[3][i] = A * airy[1] + B * airy[3]
         return solution
 
     def _get_airy_argument(self, E, U, index):
