@@ -19,8 +19,8 @@ class ASolver(object):
 class ShrodSolverSimple(ASolver):
 
     def solve(self):
-        E_start = spsc_data.EnergyValue(0.1, "eV")
-        E_end = spsc_data.EnergyValue(0.3, "eV")
+        E_start = spsc_data.EnergyValue(0.09, "eV")
+        E_end = spsc_data.EnergyValue(0.5, "eV")
         dE = spsc_data.EnergyValue(0.001, "eV")
         iteration_factory = spsc_shrod.SolutionIterationSlopePotentialFactory()
         solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 6, iteration_factory)

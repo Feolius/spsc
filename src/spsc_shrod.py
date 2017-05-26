@@ -49,28 +49,28 @@ class AIterableSolutionStrategy(ASolutionStrategy):
             plt.ion()
             plt.plot(a)
             plt.show()
-            plt.pause(0.5)
+            plt.pause(0.3)
             plt.gcf().clear()
             a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:], ))
             plt.ion()
             plt.plot(a)
             plt.show()
-            plt.pause(0.5)
+            plt.pause(0.3)
             if self._is_solution(solution_candidate):
                 wave_function = self._prepare_wave_function(solution_candidate)
-                # plt.gcf().clear()
-                # plt.plot(wave_function)
-                # potential.convert_to("eV")
-                # plt.plot(potential.value)
-                # E_current.convert_to("eV")
-                # print "Energy:", E_current.value
-                # plt.show()
+                plt.gcf().clear()
+                plt.plot(wave_function)
+                potential.convert_to("eV")
+                plt.plot(potential.value)
+                E_current.convert_to("eV")
+                print "Energy:", E_current.value
+                plt.show()
                 solutions.append((E_current, wave_function))
                 if len(solutions) == self.solutions_limit:
                     break
             self.solution_history.append(solution_candidate)
             E_current.convert_to("eV")
-            print E_current
+            # print E_current
             E_current.convert_to(self.dE.units)
             E_current += self.dE
             self._count += 1
@@ -288,8 +288,8 @@ class SolutionIterationSlopePotential(ASolutionIteration):
         (A, B) = self._get_initial_right_AB(E, solution_start[2], solution_start[3])
         U = self._get_U(N - 1)
         for i in range(N - 1, N / 3, -1):
-            if i < N - 1 and abs(self.potential[i] - self.potential[i-1]) > potential_threshold:
-                (A, B) = self._get_AB(E, i + 1, i, solution[0][i - 1], solution[1][i - 1])
+            if i < N - 1 and abs(self.potential[i] - self.potential[i+1]) > potential_threshold:
+                (A, B) = self._get_AB(E, i + 1, i, solution[2][i + 1], solution[3][i + 1])
                 U = self._get_U(i)
             airy_argument = self._get_airy_argument(E, U, i)
             airy = special.airy(airy_argument)
