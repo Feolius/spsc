@@ -26,6 +26,7 @@ class AIterableSolutionStrategy(ASolutionStrategy):
         self.iteration_factory = iteration_factory
         self.solution_history = []
         self._count = 0
+        self._w = []
 
     @abstractmethod
     def _is_solution(self, solution_candidate):
@@ -43,38 +44,54 @@ class AIterableSolutionStrategy(ASolutionStrategy):
         solutions = []
         while E_current.value < self.E_end.value:
             solution_candidate = iteration.solve(E_current, solution_start)
-            middle_index = len(solution_candidate[0]) / 2
-            plt.gcf().clear()
-            a = np.concatenate((solution_candidate[0][0:middle_index + 1], np.zeros((middle_index,))))
-            plt.ion()
-            plt.plot(a)
-            plt.show()
-            plt.pause(0.3)
-            plt.gcf().clear()
-            a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:], ))
-            plt.ion()
-            plt.plot(a)
-            plt.show()
-            plt.pause(0.3)
+            # middle_index = len(solution_candidate[0]) / 2
+            # plt.gcf().clear()
+            # a = np.concatenate((solution_candidate[0][0:middle_index + 1], np.zeros((middle_index,))))
+            # plt.ion()
+            # plt.plot(a)
+            # plt.show()
+            # plt.pause(0.1)
+            # plt.gcf().clear()
+            # a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:], ))
+            # plt.ion()
+            # plt.plot(a)
+            # plt.show()
+            # plt.pause(0.1)
             if self._is_solution(solution_candidate):
+                # middle_index = len(solution_candidate[0]) / 2
+                # plt.gcf().clear()
+                # a = np.concatenate((solution_candidate[0][0:middle_index + 1], np.zeros((middle_index,))))
+                # plt.plot(a)
+                # plt.show()
+                # plt.gcf().clear()
+                # a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:], ))
+                # plt.plot(a)
+                # plt.show()
                 wave_function = self._prepare_wave_function(solution_candidate)
-                plt.gcf().clear()
-                plt.plot(wave_function)
-                potential.convert_to("eV")
-                plt.plot(potential.value)
-                E_current.convert_to("eV")
-                print "Energy:", E_current.value
-                plt.show()
+                # plt.gcf().clear()
+                # plt.plot(wave_function)
+                # potential.convert_to("eV")
+                # plt.plot(potential.value)
+                # E_current.convert_to("eV")
+                # print "Energy:", E_current.value
+                # plt.show()
                 solutions.append((E_current, wave_function))
+                solution_start = (solution_start[0], solution_start[1], -solution_start[2], solution_start[3])
                 if len(solutions) == self.solutions_limit:
                     break
             self.solution_history.append(solution_candidate)
             E_current.convert_to("eV")
-            # print E_current
+            print E_current
             E_current.convert_to(self.dE.units)
             E_current += self.dE
             self._count += 1
-
+        # plt.gcf().clear()
+        # plt.plot(self._w)
+        # plt.show()
+        # for solution in solutions:
+        #     plt.gcf().clear()
+        #     plt.plot(solution[1].value)
+        #     plt.show()
         return solutions
 
 
@@ -120,24 +137,27 @@ class IterableSolutionStrategyNonSymmetricWell(AIterableSolutionStrategy):
             w = solution_candidate[1][middle_index] * solution_candidate[2][middle_index] - \
                 solution_candidate[3][middle_index] * solution_candidate[0][middle_index]
             print "w:", w
+            self._w.append(w)
             if w * prev_w < 0:
                 is_solution = True
-                # plt.gcf().clear()
-                # a = np.concatenate((prev_solution[0][0:middle_index + 1], np.zeros((middle_index,))))
-                # plt.plot(a)
-                # plt.show()
-                # plt.gcf().clear()
-                # a = np.concatenate((np.zeros((middle_index + 1,)), prev_solution[2][middle_index + 1:], ))
-                # plt.plot(a)
-                # plt.show()
-                # plt.gcf().clear()
-                # a = np.concatenate((solution_candidate[0][0:middle_index + 1], np.zeros((middle_index,))))
-                # plt.plot(a)
-                # plt.show()
-                # plt.gcf().clear()
-                # a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:],))
-                # plt.plot(a)
-                # plt.show()
+                N = len(prev_solution[0])
+                zeros = np.zeros((N,))
+                plt.gcf().clear()
+                a = np.concatenate((prev_solution[0][0:(N - 1) * 2 / 3 + 1], zeros[(N - 1) * 2 / 3 + 1:]))
+                plt.plot(a)
+                plt.show()
+                plt.gcf().clear()
+                a = np.concatenate((zeros[:(N - 1) / 3 + 1], prev_solution[2][(N - 1) / 3 + 1:]))
+                plt.plot(a)
+                plt.show()
+                plt.gcf().clear()
+                a = np.concatenate((solution_candidate[0][0:(N - 1) * 2 / 3 + 1], zeros[(N - 1) * 2 / 3 + 1:]))
+                plt.plot(a)
+                plt.show()
+                plt.gcf().clear()
+                a = np.concatenate((zeros[:(N - 1) / 3 + 1], solution_candidate[2][(N - 1) / 3 + 1:],))
+                plt.plot(a)
+                plt.show()
         return is_solution
 
     def _prepare_wave_function(self, solution_candidate):
