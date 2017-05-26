@@ -43,6 +43,19 @@ class AIterableSolutionStrategy(ASolutionStrategy):
         solutions = []
         while E_current.value < self.E_end.value:
             solution_candidate = iteration.solve(E_current, solution_start)
+            middle_index = len(solution_candidate[0]) / 2
+            plt.gcf().clear()
+            a = np.concatenate((solution_candidate[0][0:middle_index + 1], np.zeros((middle_index,))))
+            plt.ion()
+            plt.plot(a)
+            plt.show()
+            plt.pause(0.5)
+            plt.gcf().clear()
+            a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:], ))
+            plt.ion()
+            plt.plot(a)
+            plt.show()
+            plt.pause(0.5)
             if self._is_solution(solution_candidate):
                 wave_function = self._prepare_wave_function(solution_candidate)
                 # plt.gcf().clear()
@@ -56,11 +69,12 @@ class AIterableSolutionStrategy(ASolutionStrategy):
                 if len(solutions) == self.solutions_limit:
                     break
             self.solution_history.append(solution_candidate)
-
+            E_current.convert_to("eV")
+            print E_current
             E_current.convert_to(self.dE.units)
             E_current += self.dE
             self._count += 1
-            print self._count
+
         return solutions
 
 
@@ -100,26 +114,30 @@ class IterableSolutionStrategyNonSymmetricWell(AIterableSolutionStrategy):
             middle_index = len(solution_candidate[0]) / 2
             prev_w = prev_solution[1][middle_index] * prev_solution[2][middle_index] - \
                      prev_solution[3][middle_index] * prev_solution[0][middle_index]
+            if solution_candidate[0][middle_index] * solution_candidate[2][middle_index] < 0:
+                solution_candidate[2].value = solution_candidate[2].value * (-1)
+                solution_candidate[3].value = solution_candidate[3].value * (-1)
             w = solution_candidate[1][middle_index] * solution_candidate[2][middle_index] - \
                 solution_candidate[3][middle_index] * solution_candidate[0][middle_index]
+            print "w:", w
             if w * prev_w < 0:
                 is_solution = True
-                plt.gcf().clear()
-                a = np.concatenate((prev_solution[0][0:middle_index + 1], np.zeros((middle_index,))))
-                plt.plot(a)
-                plt.show()
-                plt.gcf().clear()
-                a = np.concatenate((np.zeros((middle_index + 1,)), prev_solution[2][middle_index + 1:], ))
-                plt.plot(a)
-                plt.show()
-                plt.gcf().clear()
-                a = np.concatenate((solution_candidate[0][0:middle_index + 1], np.zeros((middle_index,))))
-                plt.plot(a)
-                plt.show()
-                plt.gcf().clear()
-                a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:],))
-                plt.plot(a)
-                plt.show()
+                # plt.gcf().clear()
+                # a = np.concatenate((prev_solution[0][0:middle_index + 1], np.zeros((middle_index,))))
+                # plt.plot(a)
+                # plt.show()
+                # plt.gcf().clear()
+                # a = np.concatenate((np.zeros((middle_index + 1,)), prev_solution[2][middle_index + 1:], ))
+                # plt.plot(a)
+                # plt.show()
+                # plt.gcf().clear()
+                # a = np.concatenate((solution_candidate[0][0:middle_index + 1], np.zeros((middle_index,))))
+                # plt.plot(a)
+                # plt.show()
+                # plt.gcf().clear()
+                # a = np.concatenate((np.zeros((middle_index + 1,)), solution_candidate[2][middle_index + 1:],))
+                # plt.plot(a)
+                # plt.show()
         return is_solution
 
     def _prepare_wave_function(self, solution_candidate):
@@ -257,9 +275,10 @@ class SolutionIterationSlopePotential(ASolutionIteration):
 
         (A, B) = self._get_initial_left_AB(E, solution_start[0], solution_start[1])
         U = self._get_U(0)
+        U.convert_to("eV")
         for i in range(N * 2 / 3):
             if i > 0 and abs(self.potential[i] - self.potential[i-1]) > potential_threshold:
-                (A, B) = self._get_AB(E, i, solution[0][i - 1], solution[1][i - 1])
+                (A, B) = self._get_AB(E, i - 1, i, solution[0][i - 1], solution[1][i - 1])
                 U = self._get_U(i)
             airy_argument = self._get_airy_argument(E, U, i)
             airy = special.airy(airy_argument)
@@ -270,7 +289,7 @@ class SolutionIterationSlopePotential(ASolutionIteration):
         U = self._get_U(N - 1)
         for i in range(N - 1, N / 3, -1):
             if i < N - 1 and abs(self.potential[i] - self.potential[i-1]) > potential_threshold:
-                (A, B) = self._get_AB(E, i, solution[0][i - 1], solution[1][i - 1])
+                (A, B) = self._get_AB(E, i + 1, i, solution[0][i - 1], solution[1][i - 1])
                 U = self._get_U(i)
             airy_argument = self._get_airy_argument(E, U, i)
             airy = special.airy(airy_argument)
@@ -293,7 +312,7 @@ class SolutionIterationSlopePotential(ASolutionIteration):
         return U
 
     def _get_initial_left_AB(self, E, func_value, der_value):
-        return self._get_AB(E, 0, func_value, der_value)
+        return self._get_AB(E, 0, 0, func_value, der_value)
 
     def _get_initial_right_AB(self, E, func_value, der_value):
         index = len(self.potential) - 1
@@ -303,9 +322,9 @@ class SolutionIterationSlopePotential(ASolutionIteration):
         A = func_value / airy[0]
         return A, 0
 
-    def _get_AB(self, E, index, func_value, der_value):
+    def _get_AB(self, E, prev_index, index, func_value, der_value):
         U = self._get_U(index)
-        airy_arg = self._get_airy_argument(E, U, index)
+        airy_arg = self._get_airy_argument(E, U, prev_index)
         airy = special.airy(airy_arg)
         lin_matrix = np.array([[airy[0], airy[2]], [airy[1], airy[3]]])
         lin_right = np.array([[func_value], [der_value]])

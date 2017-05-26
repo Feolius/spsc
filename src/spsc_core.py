@@ -19,7 +19,7 @@ class ASolver(object):
 class ShrodSolverSimple(ASolver):
 
     def solve(self):
-        E_start = spsc_data.EnergyValue(0.05, "eV")
+        E_start = spsc_data.EnergyValue(0.1, "eV")
         E_end = spsc_data.EnergyValue(0.3, "eV")
         dE = spsc_data.EnergyValue(0.001, "eV")
         iteration_factory = spsc_shrod.SolutionIterationSlopePotentialFactory()
