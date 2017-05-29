@@ -19,15 +19,15 @@ class ASolver(object):
 class ShrodSolverSimple(ASolver):
 
     def solve(self):
-        E_start = spsc_data.EnergyValue(0.1, "eV")
-        E_end = spsc_data.EnergyValue(0.12, "eV")
+        E_start = spsc_data.EnergyValue(0.05, "eV")
+        E_end = spsc_data.EnergyValue(0.4, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
         iteration_factory = spsc_shrod.SolutionIterationSlopePotentialFactory()
         solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 6, iteration_factory)
         potential = self.state.electron_states[0].static_potential
         mass = self.state.electron_states[0].mass
         length = self.state.length
-        solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -40, 0, 10.0 ** -50, 0))
+        solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0, 10.0 ** -25, 0))
         for solution in solutions:
             self.state.electron_states[0].wave_functions.append(solution[1])
             # plt.gcf().clear()
