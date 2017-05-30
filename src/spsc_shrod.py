@@ -61,18 +61,19 @@ class AIterableSolutionStrategy(ASolutionStrategy):
             # plt.pause(0.01)
             if self._is_solution(solution_candidate):
                 wave_function = self._prepare_wave_function(solution_candidate)
-                plt.gcf().clear()
-                plt.plot(wave_function)
-                potential.convert_to("eV")
-                plt.plot(potential.value)
-                E_current.convert_to("eV")
-                print "Energy:", E_current.value
-                plt.show()
+                # plt.gcf().clear()
+                # plt.plot(wave_function)
+                # potential.convert_to("eV")
+                # plt.plot(potential.value)
+                # E_current.convert_to("eV")
+                # plt.show()
+                # print "Energy:", E_current.value
                 solutions.append((E_current, wave_function))
 
                 if len(solutions) == self.solutions_limit:
                     break
-            if self.solution_history and solution_candidate[0][N * 2 / 3] != self.solution_history[-1][0][N * 2 / 3]:
+            if self.solution_history and solution_candidate[0][N * 2 / 3] != self.solution_history[-1][0][N * 2 / 3] \
+                    and len(solution_start) == 4:
                 solution_start = (solution_start[0], solution_start[1], -solution_start[2], solution_start[3])
 
 
@@ -108,9 +109,9 @@ class IterableSolutionStrategySymmetricWell(AIterableSolutionStrategy):
         return is_solution
 
     def _prepare_wave_function(self, solution_candidate):
-        wave_function = solution_candidate[0].mirror()
-        wave_function.normalize()
-        return wave_function
+        solution_candidate[0].mirror()
+        solution_candidate[0].normalize()
+        return solution_candidate[0]
 
 
 class IterableSolutionStrategyNonSymmetricWell(AIterableSolutionStrategy):
