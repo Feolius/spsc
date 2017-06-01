@@ -15,6 +15,17 @@ class APhysValue(spsc_io.Default):
     def units_options(self):
         return {}
 
+    _meta_info = {}
+
+    def meta_info_getter(self):
+        return self._meta_info
+
+    def meta_info_setter(self, meta_info):
+        if type(meta_info) is dict:
+            self._meta_info = meta_info
+
+    meta_info = property(meta_info_getter, meta_info_setter)
+
     def __init__(self, value, units=None):
         if units is None:
             units = self.units_default
@@ -80,6 +91,8 @@ class APhysValue(spsc_io.Default):
             "value": self.value,
             "units": self.units
         }
+        if self.meta_info:
+            dct["meta_info"] = self.meta_info
         return dct
 
     @classmethod
@@ -90,6 +103,8 @@ class APhysValue(spsc_io.Default):
             obj = cls(dct["value"], dct["units"])
         else:
             obj = cls(dct["value"])
+        if "meta_info" in dct:
+            obj.meta_info = dct["meta_info"]
         return obj
 
     @classmethod
@@ -211,10 +226,8 @@ class APhysValueArray(APhysValue):
         return item in self.value
 
     def to_dict(self):
-        dct = {
-            "value": self.value.tolist(),
-            "units": self.units
-        }
+        dct = super(APhysValueArray, self).to_dict()
+        dct["value"] = self.value.tolist()
         return dct
 
     def __eq__(self, other):
@@ -239,12 +252,7 @@ class APhysValueArray(APhysValue):
 
     @classmethod
     def from_dict(cls, dct):
-        if "value" not in dct:
-            raise KeyError("Value key is not found in import dictionary")
-        if "units" in dct:
-            obj = cls(dct["value"], dct["units"])
-        else:
-            obj = cls(dct["value"])
+        obj = super(APhysValueArray, cls).from_dict(dct)
         return obj
 
     @classmethod

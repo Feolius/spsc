@@ -486,16 +486,20 @@ class PhysValueIOTestCase(unittest.TestCase):
     def test_to_dict_int(self):
         rnd = random.randint(0, 100)
         value = TestValue(rnd)
+        value.meta_info = {"key": "value"}
         dct = value.to_dict()
         self.assertEqual(dct["value"], rnd)
         self.assertEqual(dct["units"], "units_default")
+        self.assertEqual(dct["meta_info"]["key"], "value")
 
     def test_to_dict_float(self):
         rnd = random.uniform(0, 100)
         value = TestValue(rnd, "units_1")
+        value.meta_info = {"key2": "value2"}
         dct = value.to_dict()
         self.assertEqual(dct["value"], rnd)
         self.assertEqual(dct["units"], "units_1")
+        self.assertEqual(dct["meta_info"]["key2"], "value2")
 
     def test_from_dict_int(self):
         rnd = random.randint(0, 100)
@@ -519,10 +523,12 @@ class PhysValueIOTestCase(unittest.TestCase):
 
     def test_import_export(self):
         value = TestValue(random.uniform(0, 100))
+        value.meta_info = {"test_key": "test_value"}
         test_file_name = "test.yml"
         value.export_file(test_file_name)
         new_value = TestValue.import_file(test_file_name)
         self.assertEqual(value, new_value)
+        self.assertEqual(value.meta_info, new_value.meta_info)
         os.remove(test_file_name)
 
 

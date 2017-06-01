@@ -176,7 +176,7 @@ class SolutionIterationFlatPotential(ASolutionIteration):
         gamma = 2.0 * self.mass.value * (self.length.value ** 2) / (constants.h_plank ** 2)
         (A, B) = self._get_initial_AB(E, solution_start)
         potential_level = self.potential[0]
-        for i in range(N * 2 / 3):
+        for i in range(N):
             x = float(i) / (N - 1)
             if self.potential[i] != potential_level:
                 AB_transition_matrix = self._get_AB_transition_matrix(potential_level, self.potential[i], E, x)
@@ -199,7 +199,7 @@ class SolutionIterationFlatPotential(ASolutionIteration):
 
     def _get_AB_transition_matrix(self, prev_potential_level, new_potential_level, E, x):
         transition_matrix = np.zeros((2, 2))
-        gamma = 2 * self.mass.value * (self.length.value ** 2) / (constants.h_plank ** 2)
+        gamma = 2.0 * self.mass.value * (self.length.value ** 2) / (constants.h_plank ** 2)
         if E < prev_potential_level and E < new_potential_level:
             k1 = np.sqrt((prev_potential_level - E) * gamma)
             k2 = np.sqrt((new_potential_level - E) * gamma)
@@ -325,3 +325,56 @@ class SolutionIterationSlopePotential(ASolutionIteration):
 class SolutionIterationSlopePotentialFactory(ASolutionIterationFactory):
     def get_iteration(self, potential, mass, length):
         return SolutionIterationSlopePotential(potential, mass, length)
+
+
+class SolutionIterationRungeKutt(ASolutionIteration):
+
+    def __init__(self, potential, mass, length):
+        super(SolutionIterationRungeKutt, self).__init__(potential, mass, length)
+        self.expanded_potential = spsc_data.Potential(np.zeros((2 * len(self.potential) - 1,), "float64"), self.potential.units)
+        self.expanded_potential.value[0::2] = self.potential.value
+        self.expanded_potential.value[1::2] = (self.potential.value[0:-1:] + self.potential.value[1::]) / 2
+
+    def _reset_to_default_units(self):
+        super(SolutionIterationRungeKutt, self)._reset_to_default_units()
+        self.expanded_potential.convert_to(self.expanded_potential.units_default)
+
+    def solve(self, E, solution_start):
+        self._reset_to_default_units()
+        E.convert_to(E.units_default)
+        N = len(self.potential)
+        solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
+        solution[0][0] = solution_start[0]
+        solution[1][0] = solution_start[1]
+        h = 1.0 / (N - 1)
+        h1 = h / 6
+        for i in range(1, N):
+            (k, q) = self._k_q(i, solution[0][i - 1], solution[1][i - 1], E)
+            solution[0][i] = solution[0][i - 1] + h1 * (k[0] + 2 * k[1] + 2 * k[2] + k[3])
+            solution[1][i] = solution[1][i - 1] + h1 * (q[0] + 2 * q[1] + 2 * q[2] + q[3])
+        return solution
+
+    def _k_q(self, index, func, der, E):
+        self._reset_to_default_units()
+        E.convert_to(E.units_default)
+        gamma = 2.0 * self.mass.value * (self.length.value ** 2) / (constants.h_plank ** 2)
+        h = 1.0 / (len(self.potential) - 1)
+        k = []
+        q = []
+        k.append(der)
+        q.append(gamma * (self.expanded_potential[2 * index] - E.value) * func)
+        k.append(der + 0.5 * h * q[0])
+        q.append(gamma * (self.expanded_potential[2*index + 1] - E.value) * (func + 0.5 * h * k[0]))
+        k.append(der + 0.5 * h * q[1])
+        q.append(gamma * (self.expanded_potential[2*index + 1] - E.value) * (func + 0.5 * h * k[1]))
+        k.append(der + 0.5 * h * q[2])
+        q.append(gamma * (self.expanded_potential[2*index + 1] - E.value) * (func + 0.5 * h * k[2]))
+        return k, q
+
+
+class SolutionIterationSymmetryLattice(ASolutionIteration):
+
+    def __init__(self, potential, mass, length):
+        super(SolutionIterationSymmetryLattice, self).__init__(potential, mass, length)
+
+

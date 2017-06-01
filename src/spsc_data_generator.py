@@ -52,26 +52,33 @@ def superlattice_well(periods_num, well_length, lattice_well_length, lattice_bar
     electron_state = spsc_core.ElectronStateSimple()
     length = spsc_data.LengthValue(0, "nm")
     dots_per_nm = 10
-    # Let's make a surface layer with well length
     lattice_length = spsc_data.LengthValue(0, "nm")
     for i in range(periods_num):
         lattice_length += lattice_well_length + lattice_barrier_length
-    length += well_length * 3 + lattice_length * 2
-    potential = spsc_data.Potential(5 * np.ones((well_length.value * dots_per_nm,), "float64"), "eV")
+    length += lattice_barrier_length * 2 + well_length + lattice_length * 2
+    potential = spsc_data.Potential(np.ones((int(lattice_barrier_length.value * dots_per_nm),), "float64"), "eV")
+    next_index = lattice_barrier_length.value * dots_per_nm
     for i in range(periods_num):
         potential.append(spsc_data.Potential(np.zeros((int(lattice_well_length.value * dots_per_nm),), "float64"), "eV"))
         potential.append(spsc_data.Potential(np.ones((int(lattice_barrier_length.value * dots_per_nm),), "float64"), "eV"))
+        next_index += lattice_well_length.value * dots_per_nm + lattice_barrier_length.value * dots_per_nm
+    meta_info = {
+        "well_start": int(next_index)
+    }
     potential.append(spsc_data.Potential(np.zeros((int(well_length.value * dots_per_nm),), "float64"), "eV"))
+    next_index += well_length.value * dots_per_nm
+    meta_info["well_end"] = int(next_index)
     empty_dots = int(length.value * dots_per_nm) + 1 - len(potential)
     potential.append(spsc_data.Potential(np.zeros((empty_dots,), "float64"), "eV"))
     potential.mirror()
+    potential.meta_info = meta_info
     electron_state.static_potential = potential
     electron_state.mass = spsc_data.MassValue(0.068 * constants.m_e)
     state.electron_states = [electron_state]
     state.length = length
     state.static_density = spsc_data.Density(np.zeros((len(potential,)), "float64"), "m^-2")
-    density_index = (well_length.value + lattice_length.value / 2) * dots_per_nm
-    state.static_density[int(density_index)] = 1.6 * 10 ** 16
+    density_index = (lattice_barrier_length.value + lattice_length.value / 2) * dots_per_nm
+    state.static_density[int(density_index)] = 4.2 * 10 ** 15
     state.static_density.mirror()
     return state
 
