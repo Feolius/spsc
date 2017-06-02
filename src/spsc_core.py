@@ -41,7 +41,7 @@ class LatticeSymmetrySolver(ASolver):
         E_start = spsc_data.EnergyValue(0.001, "eV")
         E_end = spsc_data.EnergyValue(0.4, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
-        iteration_factory = spsc_shrod.SolutionIterationFlatPotentialFactory()
+        iteration_factory = spsc_shrod.SolutionIterationSymmetryLatticeFactory()
         solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 1, iteration_factory)
         potential = self.state.electron_states[0].static_potential
         mass = self.state.electron_states[0].mass
@@ -56,9 +56,12 @@ class LatticeSymmetrySolver(ASolver):
         self.state.static_density.convert_to("m^-2")
         density = self.state.static_density - electron_density
         puass_solution_strategy = spsc_puass.GaussSolutionStrategy()
-        potential = puass_solution_strategy.solve(density, 12, self.state.length)
-        potential.convert_to("eV")
-        potential.instant_plot()
+        density_potential = puass_solution_strategy.solve(density, 12, self.state.length)
+        potential = potential + density_potential
+        potential.meta_info = self.state.electron_states[0].static_potential.meta_info
+        solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0))
+        # potential.convert_to("eV")
+        # potential.instant_plot()
 
 
 

@@ -63,7 +63,9 @@ def superlattice_well(periods_num, well_length, lattice_well_length, lattice_bar
         potential.append(spsc_data.Potential(np.ones((int(lattice_barrier_length.value * dots_per_nm),), "float64"), "eV"))
         next_index += lattice_well_length.value * dots_per_nm + lattice_barrier_length.value * dots_per_nm
     meta_info = {
-        "well_start": int(next_index)
+        "well_start": int(next_index),
+        "lattice_bar_width": int(lattice_barrier_length.value * dots_per_nm),
+        "lattice_well_width": int(lattice_well_length.value * dots_per_nm)
     }
     potential.append(spsc_data.Potential(np.zeros((int(well_length.value * dots_per_nm),), "float64"), "eV"))
     next_index += well_length.value * dots_per_nm

@@ -61,13 +61,13 @@ class AIterableSolutionStrategy(ASolutionStrategy):
             # plt.pause(0.01)
             if self._is_solution(solution_candidate):
                 wave_function = self._prepare_wave_function(solution_candidate)
-                # plt.gcf().clear()
-                # plt.plot(wave_function)
-                # potential.convert_to("eV")
-                # plt.plot(potential.value)
-                # E_current.convert_to("eV")
-                # plt.show()
-                # print "Energy:", E_current.value
+                plt.gcf().clear()
+                plt.plot(wave_function)
+                potential.convert_to("eV")
+                plt.plot(potential.value)
+                E_current.convert_to("eV")
+                plt.show()
+                print "Energy:", E_current.value
                 solutions.append((E_current, wave_function))
 
                 if len(solutions) == self.solutions_limit:
@@ -362,13 +362,13 @@ class SolutionIterationRungeKutt(ASolutionIteration):
         k = []
         q = []
         k.append(der)
-        q.append(gamma * (self.expanded_potential[2 * index] - E.value) * func)
+        q.append(gamma * (self.expanded_potential[2 * index - 2] - E.value) * func)
         k.append(der + 0.5 * h * q[0])
-        q.append(gamma * (self.expanded_potential[2*index + 1] - E.value) * (func + 0.5 * h * k[0]))
+        q.append(gamma * (self.expanded_potential[2*index - 1] - E.value) * (func + 0.5 * h * k[0]))
         k.append(der + 0.5 * h * q[1])
-        q.append(gamma * (self.expanded_potential[2*index + 1] - E.value) * (func + 0.5 * h * k[1]))
+        q.append(gamma * (self.expanded_potential[2*index - 1] - E.value) * (func + 0.5 * h * k[1]))
         k.append(der + 0.5 * h * q[2])
-        q.append(gamma * (self.expanded_potential[2*index + 1] - E.value) * (func + 0.5 * h * k[2]))
+        q.append(gamma * (self.expanded_potential[2*index] - E.value) * (func + 0.5 * h * k[2]))
         return k, q
 
 
@@ -376,5 +376,58 @@ class SolutionIterationSymmetryLattice(ASolutionIteration):
 
     def __init__(self, potential, mass, length):
         super(SolutionIterationSymmetryLattice, self).__init__(potential, mass, length)
+        self.well_start = self.potential.meta_info["well_start"]
+        self.well_end = self.potential.meta_info["well_end"]
+        self.lattice_bar_width = self.potential.meta_info["lattice_bar_width"]
+        self.lattice_well_width = self.potential.meta_info["lattice_well_width"]
+
+    def solve(self, E, solution_start):
+        self._reset_to_default_units()
+        E.convert_to(E.units_default)
+        lattice_potential = spsc_data.Potential(self.potential[:self.well_start], self.potential.units)
+        flat_lattice_potential = self._flatten_potential(lattice_potential)
+        lattice_length = spsc_data.LengthValue(self.length.value * (len(flat_lattice_potential) - 1) / (len(self.potential) - 1),
+                                               self.length.units)
+        iteration = SolutionIterationFlatPotential(flat_lattice_potential, self.mass, lattice_length)
+        lattice_solution = iteration.solve(E, solution_start)
+
+        well_solution_start = (lattice_solution[0][-1], lattice_solution[1][-1])
+        well_potential = spsc_data.Potential(self.potential[self.well_start:self.well_end], self.potential.units)
+        well_length = spsc_data.LengthValue(self.length.value * len(well_potential) / (len(self.potential) - 1), self.length.units)
+        iteration = SolutionIterationRungeKutt(well_potential, self.mass, well_length)
+        well_solution = iteration.solve(E, well_solution_start)
+
+        N = len(self.potential)
+        solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
+        solution[0][:len(lattice_solution[0])] = lattice_solution[0]
+        solution[0][len(lattice_solution[0]) - 1:len(lattice_solution[0]) + len(well_solution[0]) - 1] = well_solution[0]
+        solution[1][:len(lattice_solution[1])] = lattice_solution[1]
+        solution[1][len(lattice_solution[1]) - 1:len(lattice_solution[1]) + len(well_solution[1]) - 1] = well_solution[1]
+        return solution
+
+    def _flatten_potential(self, potential):
+        current_index = 0
+        flat_potential = spsc_data.Potential([], potential.units)
+        # Start from bar.
+        is_bar = True
+        mean_value = 0
+        while current_index < len(potential):
+            if is_bar:
+                potential_piece = potential[current_index:current_index + self.lattice_bar_width]
+                current_index += self.lattice_bar_width
+            else:
+                potential_piece = potential[current_index:current_index + self.lattice_well_width]
+                current_index += self.lattice_well_width
+            mean_value = np.mean(potential_piece)
+            flat_potential.append(spsc_data.Potential(mean_value * np.ones(len(potential_piece))))
+            is_bar = not is_bar
+        # This last point is needed for clue potential and solutions and keeping length consistent.
+        flat_potential.append(spsc_data.Potential(mean_value * np.ones(1)))
+        return flat_potential
+
+
+class SolutionIterationSymmetryLatticeFactory(ASolutionIterationFactory):
+    def get_iteration(self, potential, mass, length):
+        return SolutionIterationSymmetryLattice(potential, mass, length)
 
 
