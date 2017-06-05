@@ -76,10 +76,8 @@ class AIterableSolutionStrategy(ASolutionStrategy):
                     and len(solution_start) == 4:
                 solution_start = (solution_start[0], solution_start[1], -solution_start[2], solution_start[3])
 
-
             self.solution_history.append(solution_candidate)
             E_current.convert_to("eV")
-            print E_current
             E_current.convert_to(self.dE.units)
             E_current += self.dE
             self._count += 1
@@ -429,5 +427,13 @@ class SolutionIterationSymmetryLattice(ASolutionIteration):
 class SolutionIterationSymmetryLatticeFactory(ASolutionIterationFactory):
     def get_iteration(self, potential, mass, length):
         return SolutionIterationSymmetryLattice(potential, mass, length)
+
+
+class SolutionIterationSlopedLattice(SolutionIterationSymmetryLattice):
+
+    def solve(self, E, solution_start):
+        self._reset_to_default_units()
+        E.convert_to(E.units_default)
+
 
 

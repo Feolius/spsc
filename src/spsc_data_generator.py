@@ -76,12 +76,36 @@ def superlattice_well(periods_num, well_length, lattice_well_length, lattice_bar
     potential.meta_info = meta_info
     electron_state.static_potential = potential
     electron_state.mass = spsc_data.MassValue(0.068 * constants.m_e)
+    electron_state.sum_density = spsc_data.DensityValue(8.4 * 10 ** 15, "m^-2")
     state.electron_states = [electron_state]
     state.length = length
     state.static_density = spsc_data.Density(np.zeros((len(potential,)), "float64"), "m^-2")
     density_index = (lattice_barrier_length.value + lattice_length.value / 2) * dots_per_nm
-    state.static_density[int(density_index)] = 4.2 * 10 ** 15
+    state.static_density[int(density_index)] = 1.6 * 10 ** 16
     state.static_density.mirror()
+    state.density_potential = spsc_data.Potential(np.zeros((len(potential,)), "float64"))
+    return state
+
+
+def superlattice_well_sloped(periods_num, well_length, lattice_well_length, lattice_barrier_length, slope):
+    state = superlattice_well(periods_num, well_length, lattice_well_length, lattice_barrier_length)
+    slope.convert_to(slope.units_default)
+    state.length.convert_to(state.length.units_default)
+    energy_diff = slope.value * state.length.value * constants.e
+    energy_diff = spsc_data.EnergyValue(energy_diff)
+    energy_diff.convert_to("eV")
+
+    state.electron_states[0].static_potential.convert_to("eV")
+    potential_arr = state.electron_states[0].static_potential.value
+    slope_arr = np.zeros((len(potential_arr),))
+    dE = energy_diff.value / (len(slope_arr) - 1)
+    for i in range(len(slope_arr)):
+        slope_arr[i] = dE * i
+    potential_arr = potential_arr + slope_arr
+    well_min_index = potential_arr.argmin()
+    well_min_value = potential_arr[well_min_index]
+    potential_arr = potential_arr - np.full((len(potential_arr),), well_min_value)
+    state.electron_states[0].static_potential = spsc_data.Potential(potential_arr, "eV")
     return state
 
 

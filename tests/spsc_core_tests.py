@@ -49,11 +49,13 @@ def random_electron_state_simple(granularity=None):
         wave_functions.append(random_value_array("WaveFunction", granularity))
     static_potential = random_value_array("Potential", granularity, rnd_energy_units)
     mass = random_value("MassValue")
+    sum_density = random_value("DensityValue")
     electron_state = spsc_core.ElectronStateSimple()
     electron_state.energy_levels = energy_levels
     electron_state.wave_functions = wave_functions
     electron_state.static_potential = static_potential
     electron_state.mass = mass
+    electron_state.sum_density = sum_density
     return electron_state
 
 
@@ -70,11 +72,13 @@ def random_electron_state_simple_dict(granularity=None):
         wave_functions.append(random_value_array("WaveFunction", granularity).to_dict())
     static_potential = random_value_array("Potential", granularity, rnd_energy_units).to_dict()
     mass = random_value("MassValue").to_dict()
+    sum_density = random_value("DensityValue").to_dict()
     dct = {
         "energy_levels": energy_levels,
         "wave_functions": wave_functions,
         "static_potential": static_potential,
-        "mass": mass
+        "mass": mass,
+        "sum_density": sum_density
     }
     return dct
 
@@ -193,6 +197,8 @@ class ElectronStateSimpleIOTestCase(unittest.TestCase):
         self.assertEqual(dct_static_potential, electron_state.static_potential)
         dct_mass = spsc_data.MassValue.from_dict(dct["mass"])
         self.assertEqual(dct_mass, electron_state.mass)
+        dct_sum_density = spsc_data.DensityValue.from_dict(dct["sum_density"])
+        self.assertEqual(dct_sum_density, electron_state.sum_density)
 
     def test_from_dict(self):
         electron_state_dict = random_electron_state_simple_dict()
@@ -210,6 +216,8 @@ class ElectronStateSimpleIOTestCase(unittest.TestCase):
         self.assertEqual(electron_state.static_potential, dict_static_potential)
         dict_mass = spsc_data.MassValue.from_dict(electron_state_dict["mass"])
         self.assertEqual(electron_state.mass, dict_mass)
+        dict_sum_density = spsc_data.DensityValue.from_dict(electron_state_dict["sum_density"])
+        self.assertEqual(electron_state.sum_density, dict_sum_density)
 
     def test_import_export(self):
         electron_state = random_electron_state_simple()

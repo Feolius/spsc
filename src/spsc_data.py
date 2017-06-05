@@ -272,9 +272,6 @@ class APhysValueArray(APhysValue):
         self.value = np.append(left_part, right_part)
 
 
-
-
-
 class Potential(APhysValueArray, EnergyValue):
     pass
 
@@ -287,8 +284,6 @@ class WaveFunction(APhysValueArray, EmptyUnitsValue):
         for i in range(len(self)):
             square += self[i] * self[i] * h
         self.value = self.value / square ** 0.5
-
-
 
 
 class Density(APhysValueArray, DensityValue):

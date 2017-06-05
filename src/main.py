@@ -12,9 +12,15 @@ import spsc_core
 # pot.instant_plot()
 # solver = spsc_core.ShrodSolverSimple(state)
 # solver.solve()
-state = spsc_data_generator.superlattice_well(8, spsc_data.LengthValue(26, "nm"), spsc_data.LengthValue(2.3, "nm"), spsc_data.LengthValue(1.1, "nm"))
-solver = spsc_core.LatticeSymmetrySolver(state)
-solver.solve()
+# state = spsc_data_generator.superlattice_well(8, spsc_data.LengthValue(26, "nm"), spsc_data.LengthValue(2.3, "nm"), spsc_data.LengthValue(1.1, "nm"))
+state = spsc_data_generator.superlattice_well_sloped(8, spsc_data.LengthValue(26, "nm"),
+                                                     spsc_data.LengthValue(2.3, "nm"), spsc_data.LengthValue(1.1, "nm"),
+                                                     spsc_data.ElectricFieldValue(10 ** -4, "V_per_m"))
+# pot = state.electron_states[0].static_potential
+# pot.instant_plot()
+# solver = spsc_core.LatticeSymmetrySolver(state)
+# solver.solve()
+
 
 
 
