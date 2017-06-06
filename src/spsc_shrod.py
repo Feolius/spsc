@@ -37,6 +37,7 @@ class AIterableSolutionStrategy(ASolutionStrategy):
         pass
 
     def solve(self, potential, mass, length, solution_start):
+        self.solution_history = []
         self.E_start.convert_to(self.dE.units)
         self.E_end.convert_to(self.dE.units)
         E_current = copy.deepcopy(self.E_start)
@@ -51,24 +52,27 @@ class AIterableSolutionStrategy(ASolutionStrategy):
             # plt.ion()
             # plt.plot(a)
             # plt.show()
-            # plt.pause(0.005)
+            # plt.pause(0.1)
 
             # plt.gcf().clear()
             # a = np.concatenate((zeros[:(N - 1) / 3 + 1], solution_candidate[2][(N - 1) / 3 + 1:]))
             # plt.ion()
             # plt.plot(a)
             # plt.show()
-            # plt.pause(0.01)
+            # plt.pause(0.1)
+
             if self._is_solution(solution_candidate):
                 wave_function = self._prepare_wave_function(solution_candidate)
                 plt.gcf().clear()
+                plt.ion()
                 plt.plot(wave_function)
                 potential.convert_to("eV")
                 plt.plot(potential.value)
                 E_current.convert_to("eV")
                 plt.show()
-                print "Energy:", E_current.value
+                plt.pause(0.1)
                 solutions.append((E_current, wave_function))
+                print "Energy:", len(solutions), E_current.value
 
                 if len(solutions) == self.solutions_limit:
                     break
@@ -122,7 +126,6 @@ class IterableSolutionStrategyNonSymmetricWell(AIterableSolutionStrategy):
                      prev_solution[3][middle_index] * prev_solution[0][middle_index]
             w = solution_candidate[1][middle_index] * solution_candidate[2][middle_index] - \
                 solution_candidate[3][middle_index] * solution_candidate[0][middle_index]
-            print "w:", w
             self._w.append(w)
             if w * prev_w < 0:
                 is_solution = True
@@ -429,11 +432,30 @@ class SolutionIterationSymmetryLatticeFactory(ASolutionIterationFactory):
         return SolutionIterationSymmetryLattice(potential, mass, length)
 
 
-class SolutionIterationSlopedLattice(SolutionIterationSymmetryLattice):
+class SolutionIterationSlopedLattice(ASolutionIteration):
 
     def solve(self, E, solution_start):
-        self._reset_to_default_units()
-        E.convert_to(E.units_default)
+        iteration_factory = SolutionIterationSymmetryLatticeFactory()
+        iteration = iteration_factory.get_iteration(self.potential, self.mass, self.length)
+        left_solution = iteration.solve(E, (solution_start[0], solution_start[1]))
 
+        potential_turned = spsc_data.Potential(self.potential.value[::-1], self.potential.units)
+        potential_turned.meta_info = {
+            "well_start": len(potential_turned) - self.potential.meta_info["well_end"] - 1,
+            "well_end": len(potential_turned) - self.potential.meta_info["well_start"] - 1,
+            "lattice_bar_width": self.potential.meta_info["lattice_bar_width"],
+            "lattice_well_width": self.potential.meta_info["lattice_well_width"]
+        }
+        iteration = iteration_factory.get_iteration(potential_turned, self.mass, self.length)
+        right_solution = iteration.solve(E, (solution_start[2], solution_start[3]))
+        right_solution[0].value = right_solution[0].value[::-1]
+        right_solution[1].value = right_solution[1].value[::-1] * -1
+
+        return left_solution[0], left_solution[1], right_solution[0], right_solution[1]
+
+
+class SolutionIterationSlopedLatticeFactory(ASolutionIterationFactory):
+    def get_iteration(self, potential, mass, length):
+        return SolutionIterationSlopedLattice(potential, mass, length)
 
 

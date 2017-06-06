@@ -18,7 +18,25 @@ class ASolver(object):
         pass
 
 
-class ShrodSolverSimple(ASolver):
+class SymmetricWellSolver(ASolver):
+
+    def solve(self):
+        E_start = spsc_data.EnergyValue(0.001, "eV")
+        E_end = spsc_data.EnergyValue(0.4, "eV")
+        dE = spsc_data.EnergyValue(0.0001, "eV")
+        iteration_factory = spsc_shrod.SolutionIterationFlatPotentialFactory()
+        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 6, iteration_factory)
+        potential = self.state.electron_states[0].static_potential
+        mass = self.state.electron_states[0].mass
+        length = self.state.length
+        solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0))
+        for i in range(len(solutions)):
+            solution = solutions[i]
+            self.state.electron_states[i].wave_functions.append(solution[1])
+            self.state.electron_states[i].energy_levels.append(solution[0])
+
+
+class SlopedWellSolver(ASolver):
 
     def solve(self):
         E_start = spsc_data.EnergyValue(0.05, "eV")
@@ -75,10 +93,44 @@ class LatticeSymmetrySolver(ASolver):
             density_potential = puass_solution_strategy.solve(density, 12, self.state.length)
 
 
+class LatticeSlopedSolver(ASolver):
 
-        # potential.convert_to("eV")
-        # potential.instant_plot()
-
+    def solve(self):
+        E_start = spsc_data.EnergyValue(0.001, "eV")
+        E_end = spsc_data.EnergyValue(0.4, "eV")
+        dE = spsc_data.EnergyValue(0.0001, "eV")
+        static_potential = self.state.electron_states[0].static_potential
+        meta_info = static_potential.meta_info
+        iteration_factory = spsc_shrod.SolutionIterationSlopedLatticeFactory()
+        solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 2, iteration_factory)
+        density_potential = self.state.density_potential
+        mass = self.state.electron_states[0].mass
+        length = self.state.length
+        electron_state = self.state.electron_states[0]
+        for j in range(20):
+            potential = static_potential + density_potential
+            potential = potential - spsc_data.Potential(
+                potential[meta_info["well_start"]] * np.ones((len(potential),), "float64"), potential.units)
+            potential.meta_info = meta_info
+            solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0, 10.0 ** -25, 0))
+            for i in range(len(solutions)):
+                solution = solutions[i]
+                if len(electron_state.wave_functions) > i:
+                    electron_state.wave_functions[i] = solution[1]
+                else:
+                    electron_state.wave_functions.append(solution[1])
+                if len(electron_state.energy_levels) > i:
+                    electron_state.energy_levels[i] = solution[0]
+                else:
+                    electron_state.energy_levels.append(solution[0])
+            h = 1.0 / (len(self.state.electron_states[0].wave_functions[0]) - 1)
+            electron_density = spsc_data.Density(
+                electron_state.sum_density.value * h * (electron_state.wave_functions[0].value ** 2),
+                electron_state.sum_density.units)
+            self.state.static_density.convert_to("m^-2")
+            density = self.state.static_density - electron_density
+            puass_solution_strategy = spsc_puass.GaussSolutionStrategy()
+            density_potential = puass_solution_strategy.solve(density, 12, self.state.length)
 
 
 class AState(spsc_io.Default):

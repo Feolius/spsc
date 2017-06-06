@@ -105,7 +105,9 @@ def superlattice_well_sloped(periods_num, well_length, lattice_well_length, latt
     well_min_index = potential_arr.argmin()
     well_min_value = potential_arr[well_min_index]
     potential_arr = potential_arr - np.full((len(potential_arr),), well_min_value)
+    meta_info = state.electron_states[0].static_potential.meta_info
     state.electron_states[0].static_potential = spsc_data.Potential(potential_arr, "eV")
+    state.electron_states[0].static_potential.meta_info = meta_info
     return state
 
 
