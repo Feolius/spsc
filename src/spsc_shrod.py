@@ -69,6 +69,7 @@ class AIterableSolutionStrategy(ASolutionStrategy):
                 potential.convert_to("eV")
                 plt.plot(potential.value)
                 E_current.convert_to("eV")
+                plt.plot(E_current.value * np.ones((len(potential), ), "float64"))
                 plt.show()
                 plt.pause(0.1)
                 solutions.append((E_current, wave_function))
