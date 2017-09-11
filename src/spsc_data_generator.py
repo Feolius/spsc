@@ -76,12 +76,12 @@ def superlattice_well(periods_num, well_length, lattice_well_length, lattice_bar
     potential.meta_info = meta_info
     electron_state.static_potential = potential
     electron_state.mass = spsc_data.MassValue(0.068 * constants.m_e)
-    electron_state.sum_density = spsc_data.DensityValue(8.4 * 10 ** 15, "m^-2")
+    electron_state.sum_density = spsc_data.DensityValue(10.0 * 10 ** 15, "m^-2")
     state.electron_states = [electron_state]
     state.length = length
     state.static_density = spsc_data.Density(np.zeros((len(potential,)), "float64"), "m^-2")
     density_index = (lattice_barrier_length.value + lattice_length.value / 2) * dots_per_nm
-    state.static_density[int(density_index)] = 1.6 * 10 ** 16
+    state.static_density[int(density_index)] = 2.0 * 10 ** 16
     state.static_density.mirror()
     state.density_potential = spsc_data.Potential(np.zeros((len(potential,)), "float64"))
     return state
