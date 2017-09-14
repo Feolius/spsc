@@ -2,7 +2,10 @@ import spsc_data
 import spsc_core
 import numpy as np
 import spsc_constants as constants
+import yaml
 import copy
+
+DOTS_PER_NM = 10
 
 
 def single_well(well_length):
@@ -51,39 +54,37 @@ def superlattice_well(periods_num, well_length, lattice_well_length, lattice_bar
     state = spsc_core.StateSimple()
     electron_state = spsc_core.ElectronStateSimple()
     length = spsc_data.LengthValue(0, "nm")
-    dots_per_nm = 10
     lattice_length = spsc_data.LengthValue(0, "nm")
     for i in range(periods_num):
         lattice_length += lattice_well_length + lattice_barrier_length
     length += lattice_barrier_length * 2 + well_length + lattice_length * 2
-    potential = spsc_data.Potential(np.ones((int(lattice_barrier_length.value * dots_per_nm),), "float64"), "eV")
-    next_index = lattice_barrier_length.value * dots_per_nm
+    potential = spsc_data.Potential(np.ones((int(lattice_barrier_length.value * DOTS_PER_NM),), "float64"), "eV")
+    next_index = lattice_barrier_length.value * DOTS_PER_NM
     for i in range(periods_num):
-        potential.append(spsc_data.Potential(np.zeros((int(lattice_well_length.value * dots_per_nm),), "float64"), "eV"))
-        potential.append(spsc_data.Potential(np.ones((int(lattice_barrier_length.value * dots_per_nm),), "float64"), "eV"))
-        next_index += lattice_well_length.value * dots_per_nm + lattice_barrier_length.value * dots_per_nm
+        potential.append(
+            spsc_data.Potential(np.zeros((int(lattice_well_length.value * DOTS_PER_NM),), "float64"), "eV"))
+        potential.append(
+            spsc_data.Potential(np.ones((int(lattice_barrier_length.value * DOTS_PER_NM),), "float64"), "eV"))
+        next_index += lattice_well_length.value * DOTS_PER_NM + lattice_barrier_length.value * DOTS_PER_NM
     meta_info = {
         "well_start": int(next_index),
-        "lattice_bar_width": int(lattice_barrier_length.value * dots_per_nm),
-        "lattice_well_width": int(lattice_well_length.value * dots_per_nm)
+        "lattice_bar_width": int(lattice_barrier_length.value * DOTS_PER_NM),
+        "lattice_well_width": int(lattice_well_length.value * DOTS_PER_NM)
     }
-    potential.append(spsc_data.Potential(np.zeros((int(well_length.value * dots_per_nm),), "float64"), "eV"))
-    next_index += well_length.value * dots_per_nm
+    potential.append(spsc_data.Potential(np.zeros((int(well_length.value * DOTS_PER_NM),), "float64"), "eV"))
+    next_index += well_length.value * DOTS_PER_NM
     meta_info["well_end"] = int(next_index)
-    empty_dots = int(length.value * dots_per_nm) + 1 - len(potential)
+    empty_dots = int(length.value * DOTS_PER_NM) + 1 - len(potential)
     potential.append(spsc_data.Potential(np.zeros((empty_dots,), "float64"), "eV"))
     potential.mirror()
     potential.meta_info = meta_info
     electron_state.static_potential = potential
-    electron_state.mass = spsc_data.MassValue(0.068 * constants.m_e)
-    electron_state.sum_density = spsc_data.DensityValue(10.0 * 10 ** 15, "m^-2")
+    electron_state.mass = spsc_data.MassValue(constants.m_e)
+    electron_state.sum_density = spsc_data.DensityValue(0, "m^-2")
     state.electron_states = [electron_state]
     state.length = length
-    state.static_density = spsc_data.Density(np.zeros((len(potential,)), "float64"), "m^-2")
-    density_index = (lattice_barrier_length.value + lattice_length.value / 2) * dots_per_nm
-    state.static_density[int(density_index)] = 2.0 * 10 ** 16
-    state.static_density.mirror()
-    state.density_potential = spsc_data.Potential(np.zeros((len(potential,)), "float64"))
+    state.static_density = spsc_data.Density(np.zeros((len(potential, )), "float64"), "m^-2")
+    state.density_potential = spsc_data.Potential(np.zeros((len(potential, )), "float64"))
     return state
 
 
@@ -111,3 +112,48 @@ def superlattice_well_sloped(periods_num, well_length, lattice_well_length, latt
     return state
 
 
+def simple_superlattice(file):
+    f = open(file, 'r')
+    data = yaml.load(f)
+    f.close()
+
+    well_length = spsc_data.LengthValue(data['well_length'], 'nm')
+    lattice_well_length = spsc_data.LengthValue(data['lattice_well_length'], 'nm')
+    lattice_barrier_length = spsc_data.LengthValue(data['lattice_barrier_length'], 'nm')
+
+    state = superlattice_well(data['periods_number'], well_length, lattice_well_length, lattice_barrier_length)
+    electron_state = state.electron_states[0]
+    electron_state.mass = electron_state.mass * data['mass']
+    electron_state.sum_density = spsc_data.DensityValue(data['density'], "m^-2")
+    electron_state.static_potential.value = electron_state.static_potential.value * data['lattice_amplitude']
+
+    lattice_well_length.convert_to("nm")
+    lattice_barrier_length.convert_to("nm")
+    delta_layer_index = (data['delta_layer_period'] - 1) * (
+        lattice_well_length.value + lattice_barrier_length.value) * DOTS_PER_NM + \
+        lattice_well_length.value * DOTS_PER_NM / 2 + lattice_barrier_length.value * DOTS_PER_NM
+    state.static_density.convert_to('m^-2')
+    state.static_density[int(delta_layer_index)] = data['delta_layer_density']
+    state.static_density.mirror()
+    return state
+
+
+def x_electrons_superlattice(file):
+    f = open(file, 'r')
+    data = yaml.load(f)
+    f.close()
+
+    well_length = spsc_data.LengthValue(data['well_length'], 'nm')
+    lattice_well_length = spsc_data.LengthValue(data['lattice_well_length'], 'nm')
+    lattice_barrier_length = spsc_data.LengthValue(data['lattice_barrier_length'], 'nm')
+
+    state = superlattice_well(data['periods_number'], well_length, lattice_well_length, lattice_barrier_length)
+    x_electron_state = state.electron_states[0]
+    x_electron_state.mass = x_electron_state.mass * data['mass_x']
+    x_electron_state.sum_density = spsc_data.DensityValue(0, "m^-2")
+    x_electron_state.static_potential.value = x_electron_state.static_potential.value - 1
+    x_electron_state.static_potential.value = x_electron_state.static_potential.value * (-data['x_lattice_amplitude'])
+    x_electron_state.static_potential.value = x_electron_state.static_potential.value + data['x_lattice_offset']
+    state = simple_superlattice(file)
+    state.electron_states.append(x_electron_state)
+    return state
