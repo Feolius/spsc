@@ -138,6 +138,25 @@ class LatticeSlopedSolver(ASolver):
         self.state.density_potential = density_potential
 
 
+class LatticeXElectronsSymmetrySolver(ASolver):
+
+    def solve(self):
+        symmetry_solver = LatticeSymmetrySolver(self.state)
+        symmetry_solver.solve()
+        E_start = spsc_data.EnergyValue(0.03, "eV")
+        E_end = spsc_data.EnergyValue(0.4, "eV")
+        dE = spsc_data.EnergyValue(0.0001, "eV")
+        static_potential = self.state.electron_states[0].static_potential
+        meta_info = static_potential.meta_info
+        iteration_factory = spsc_shrod.SolutionIterationRungeKuttFactory()
+        solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 1,
+                                                                                iteration_factory)
+        density_potential = self.state.density_potential
+        mass = self.state.electron_states[0].mass
+        length = self.state.length
+        electron_state = self.state.electron_states[0]
+
+
 
 class AState(spsc_io.Default):
     __metaclass__ = ABCMeta

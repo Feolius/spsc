@@ -374,6 +374,11 @@ class SolutionIterationRungeKutt(ASolutionIteration):
         return k, q
 
 
+class SolutionIterationRungeKuttFactory(ASolutionIterationFactory):
+    def get_iteration(self, potential, mass, length):
+        return SolutionIterationRungeKutt(potential, mass, length)
+
+
 class SolutionIterationSymmetryLattice(ASolutionIteration):
 
     def __init__(self, potential, mass, length):

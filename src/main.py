@@ -14,7 +14,7 @@ import yaml
 # state = spsc_data_generator.single_well_sloped(spsc_data.LengthValue(26, "nm"), spsc_data.ElectricFieldValue(7 * 10 ** -4, "V_per_m"))
 # solver = spsc_core.SlopedWellSolver(state)
 # solver.solve()
-state = spsc_data_generator.simple_superlattice('data/data_generator/simple_superlattice/sample.yml')
+state = spsc_data_generator.x_electrons_superlattice('data/data_generator/x_electrons_superlattice/sample.yml')
 # plt.plot(state.electron_states[0].static_potential)
 # plt.plot(state.electron_states[1].static_potential)
 # plt.plot(state.static_density * 10 ** (-16))
@@ -22,6 +22,7 @@ state = spsc_data_generator.simple_superlattice('data/data_generator/simple_supe
 # state.export_file('data/RC1402.yml')
 solver = spsc_core.LatticeSymmetrySolver(state)
 solver.solve()
+state.export_file('data/solution.yml')
 # state = spsc_data_generator.superlattice_well_sloped(8, spsc_data.LengthValue(26, "nm"),
 #                                                      spsc_data.LengthValue(2.3, "nm"), spsc_data.LengthValue(1.1, "nm"),
 #                                                      spsc_data.ElectricFieldValue(1.2 * 10 ** -4, "V_per_m"))
