@@ -132,8 +132,9 @@ def simple_superlattice(file):
     delta_layer_index = (data['delta_layer_period'] - 1) * (
         lattice_well_length.value + lattice_barrier_length.value) * DOTS_PER_NM + \
         lattice_well_length.value * DOTS_PER_NM / 2 + lattice_barrier_length.value * DOTS_PER_NM
+    delta_layer_index = int(delta_layer_index)
     state.static_density.convert_to('m^-2')
-    state.static_density[int(delta_layer_index)] = data['delta_layer_density']
+    state.static_density[delta_layer_index] = data['delta_layer_density']
     state.static_density.mirror()
     state.electron_states[0].static_potential.meta_info['delta_layer_index'] = delta_layer_index
     return state
@@ -167,8 +168,8 @@ def x_electrons_superlattice(file):
     x_solution_end_index = delta_layer_index + delta_layer_offset
     if x_solution_end_index > (len(x_electron_state.static_potential) - 1):
         x_solution_end_index = len(x_electron_state.static_potential) - 1
-    x_electron_state.static_potential.meta_info['x_solution_start'] = x_solution_start_index
-    x_electron_state.static_potential.meta_info['x_solution_end'] = x_solution_end_index
+    x_electron_state.static_potential.meta_info['x_solution_start'] = int(x_solution_start_index)
+    x_electron_state.static_potential.meta_info['x_solution_end'] = int(x_solution_end_index)
 
     state.electron_states.append(x_electron_state)
     return state

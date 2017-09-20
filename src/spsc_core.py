@@ -19,7 +19,6 @@ class ASolver(object):
 
 
 class SymmetricWellSolver(ASolver):
-
     def solve(self):
         E_start = spsc_data.EnergyValue(0.001, "eV")
         E_end = spsc_data.EnergyValue(0.4, "eV")
@@ -37,17 +36,18 @@ class SymmetricWellSolver(ASolver):
 
 
 class SlopedWellSolver(ASolver):
-
     def solve(self):
         E_start = spsc_data.EnergyValue(0.03, "eV")
         E_end = spsc_data.EnergyValue(0.6, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
         iteration_factory = spsc_shrod.SolutionIterationSlopePotentialFactory()
-        solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 8, iteration_factory)
+        solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 8,
+                                                                                iteration_factory)
         potential = self.state.electron_states[0].static_potential
         mass = self.state.electron_states[0].mass
         length = self.state.length
-        solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 10.0 ** -15, 10.0 ** -25, -10.0 ** -15))
+        solutions = solution_strategy.solve(potential, mass, length,
+                                            (10.0 ** -20, 10.0 ** -15, 10.0 ** -25, -10.0 ** -15))
         for i in range(len(solutions)):
             solution = solutions[i]
             self.state.electron_states[0].wave_functions.append(solution[1])
@@ -55,7 +55,6 @@ class SlopedWellSolver(ASolver):
 
 
 class LatticeSymmetrySolver(ASolver):
-
     def solve(self):
         E_start = spsc_data.EnergyValue(0.001, "eV")
         E_end = spsc_data.EnergyValue(0.4, "eV")
@@ -86,7 +85,8 @@ class LatticeSymmetrySolver(ASolver):
                     electron_state.energy_levels.append(solution[0])
             h = 1.0 / (len(self.state.electron_states[0].wave_functions[0]) - 1)
             electron_density = spsc_data.Density(
-                electron_state.sum_density.value * h * (electron_state.wave_functions[0].value ** 2), electron_state.sum_density.units)
+                electron_state.sum_density.value * h * (electron_state.wave_functions[0].value ** 2),
+                electron_state.sum_density.units)
             self.state.static_density.convert_to("m^-2")
             density = self.state.static_density - electron_density
             puass_solution_strategy = spsc_puass.GaussSolutionStrategy()
@@ -95,15 +95,15 @@ class LatticeSymmetrySolver(ASolver):
 
 
 class LatticeSlopedSolver(ASolver):
-
     def solve(self):
-        E_start = spsc_data.EnergyValue(0.03, "eV")
-        E_end = spsc_data.EnergyValue(0.4, "eV")
+        E_start = spsc_data.EnergyValue(0.0001, "eV")
+        E_end = spsc_data.EnergyValue(0.2, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
         static_potential = self.state.electron_states[0].static_potential
         meta_info = static_potential.meta_info
         iteration_factory = spsc_shrod.SolutionIterationSlopedLatticeFactory()
-        solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 1, iteration_factory)
+        solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 1,
+                                                                                iteration_factory)
         density_potential = self.state.density_potential
         mass = self.state.electron_states[0].mass
         length = self.state.length
@@ -139,23 +139,34 @@ class LatticeSlopedSolver(ASolver):
 
 
 class LatticeXElectronsSymmetrySolver(ASolver):
-
     def solve(self):
-        symmetry_solver = LatticeSymmetrySolver(self.state)
-        symmetry_solver.solve()
-        E_start = spsc_data.EnergyValue(0.03, "eV")
-        E_end = spsc_data.EnergyValue(0.4, "eV")
+        # symmetry_solver = LatticeSymmetrySolver(self.state)
+        # symmetry_solver.solve()
+
+        E_start = spsc_data.EnergyValue(0.01, "eV")
+        E_end = spsc_data.EnergyValue(0.2, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
-        static_potential = self.state.electron_states[0].static_potential
-        meta_info = static_potential.meta_info
+
+        meta_info = self.state.electron_states[1].static_potential.meta_info
+        self.state.electron_states[1].static_potential.convert_to('eV')
+        self.state.density_potential.convert_to('eV')
+        static_potential_arr = self.state.electron_states[1].static_potential.value[
+                               meta_info['x_solution_start']:meta_info['x_solution_end']]
+        density_potential_arr = self.state.density_potential.value[
+                                meta_info['x_solution_start']:meta_info['x_solution_end']]
+
+        potential_arr = static_potential_arr + density_potential_arr
+        potential_arr = potential_arr - np.amin(potential_arr)
+        potential = spsc_data.Potential(potential_arr, "eV")
+
+        mass = self.state.electron_states[1].mass
+        length = self.state.length
         iteration_factory = spsc_shrod.SolutionIterationRungeKuttFactory()
         solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 1,
                                                                                 iteration_factory)
-        density_potential = self.state.density_potential
-        mass = self.state.electron_states[0].mass
-        length = self.state.length
-        electron_state = self.state.electron_states[0]
-
+        solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0, 10.0 ** -25, 0))
+        wave_function = solutions[0][1]
+        wave_function.instant_plot()
 
 
 class AState(spsc_io.Default):
@@ -195,8 +206,7 @@ class AState(spsc_io.Default):
 
 
 class StateSimple(AState):
-
-    _electron_states = []
+    _electron_states = None
 
     def electron_states_getter(self):
         return self._electron_states
@@ -206,7 +216,7 @@ class StateSimple(AState):
 
     electron_states = property(electron_states_getter, electron_states_setter)
 
-    _static_density = spsc_data.Density([])
+    _static_density = None
 
     def static_density_getter(self):
         return self._static_density
@@ -216,7 +226,7 @@ class StateSimple(AState):
 
     static_density = property(static_density_getter, static_density_setter)
 
-    _density_potential = spsc_data.Potential([])
+    _density_potential = None
 
     def density_potential_getter(self):
         return self._density_potential
@@ -226,7 +236,7 @@ class StateSimple(AState):
 
     density_potential = property(density_potential_getter, density_potential_setter)
 
-    _length = spsc_data.LengthValue(0)
+    _length = None
 
     def length_getter(self):
         return self._length
@@ -235,6 +245,12 @@ class StateSimple(AState):
         self._length = length
 
     length = property(length_getter, length_setter)
+
+    def __init__(self):
+        self.electron_states = []
+        self.static_density = spsc_data.Density([])
+        self.density_potential = spsc_data.Potential([])
+        self.length = spsc_data.LengthValue(0)
 
     @classmethod
     def from_dict(cls, dct):
@@ -289,7 +305,8 @@ class StateSimple(AState):
             if len(self.electron_states) == len(other.electron_states):
                 electron_states_equal = True
                 for i in range(len(self.electron_states)):
-                    electron_states_equal = electron_states_equal and self.electron_states[i] == other.electron_states[i]
+                    electron_states_equal = electron_states_equal and self.electron_states[i] == other.electron_states[
+                        i]
             static_density_equal = self.static_density == other.static_density
             density_potential_equal = self.density_potential == other.density_potential
             length_equal = self.length == other.length
@@ -345,7 +362,7 @@ class AElectronState(spsc_io.Default):
 
 
 class ElectronStateSimple(AElectronState):
-    _wave_functions = []
+    _wave_functions = None
 
     def wave_functions_getter(self):
         return self._wave_functions
@@ -355,7 +372,7 @@ class ElectronStateSimple(AElectronState):
 
     wave_functions = property(wave_functions_getter, wave_functions_setter)
 
-    _energy_levels = []
+    _energy_levels = None
 
     def energy_levels_getter(self):
         return self._energy_levels
@@ -365,7 +382,7 @@ class ElectronStateSimple(AElectronState):
 
     energy_levels = property(energy_levels_getter, energy_levels_setter)
 
-    _static_potential = spsc_data.Potential([])
+    _static_potential = None
 
     def static_potential_getter(self):
         return self._static_potential
@@ -375,9 +392,7 @@ class ElectronStateSimple(AElectronState):
 
     static_potential = property(static_potential_getter, static_potential_setter)
 
-    _density_potential = spsc_data.Potential([])
-
-    _mass = spsc_data.MassValue(0)
+    _mass = None
 
     def mass_getter(self):
         return self._mass
@@ -387,7 +402,7 @@ class ElectronStateSimple(AElectronState):
 
     mass = property(mass_getter, mass_setter)
 
-    _sum_density = spsc_data.DensityValue(0)
+    _sum_density = None
 
     def sum_density_getter(self):
         return self._sum_density
@@ -396,6 +411,13 @@ class ElectronStateSimple(AElectronState):
         self._sum_density = sum_density
 
     sum_density = property(sum_density_getter, sum_density_setter)
+
+    def __init__(self):
+        self.wave_functions = []
+        self.energy_levels = []
+        self.static_potential = spsc_data.Potential([])
+        self.mass = spsc_data.MassValue(0)
+        self.sum_density = spsc_data.DensityValue(0)
 
     @classmethod
     def from_dict(cls, dct):
@@ -474,5 +496,3 @@ class ElectronStateSimple(AElectronState):
         else:
             raise StandardError("Electron state granularity is inconsistent")
         return granularity
-
-
