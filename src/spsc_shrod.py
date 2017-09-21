@@ -24,6 +24,7 @@ class AIterableSolutionStrategy(ASolutionStrategy):
         self.dE = dE
         self.solutions_limit = solutions_limit
         self.iteration_factory = iteration_factory
+        self._context = {}
         self.solution_history = []
         self._count = 0
         self._w = []
@@ -36,7 +37,14 @@ class AIterableSolutionStrategy(ASolutionStrategy):
     def _prepare_wave_function(self, solution_candidate):
         pass
 
+    def _set_context(self, context):
+        self._context = context
+
+    def _clear_context(self):
+        self._context = {}
+
     def solve(self, potential, mass, length, solution_start):
+        self._set_context(locals())
         self.solution_history = []
         self.E_start.convert_to(self.dE.units)
         self.E_end.convert_to(self.dE.units)
@@ -46,46 +54,50 @@ class AIterableSolutionStrategy(ASolutionStrategy):
         while E_current.value < self.E_end.value:
             solution_candidate = iteration.solve(E_current, solution_start)
             N = len(solution_candidate[0])
-            zeros = np.zeros((N,))
-            plt.gcf().clear()
-            a = np.concatenate((solution_candidate[0][0:(N - 1) * 2 / 3 + 1], zeros[(N - 1) * 2 / 3 + 1:]))
-            plt.ion()
-            plt.plot(a)
-            plt.show()
-            plt.pause(2)
+            # zeros = np.zeros((N,))
+            # plt.gcf().clear()
+            # cut_index = (N - 1) * 2 / 3 + 5
+            # a = np.concatenate((solution_candidate[0][0:cut_index], zeros[cut_index:]))
+            # plt.ion()
+            # plt.plot(a)
+            # plt.show()
+            # plt.pause(0.1)
 
-            plt.gcf().clear()
-            a = np.concatenate((zeros[:(N - 1) / 3 + 1], solution_candidate[2][(N - 1) / 3 + 1:]))
-            plt.ion()
-            plt.plot(a)
-            plt.show()
-            plt.pause(2)
+            # plt.gcf().clear()
+            # cut_index = (N - 1) / 2 + 10
+            # a = np.concatenate((zeros[:cut_index], solution_candidate[2][cut_index:]))
+            # plt.ion()
+            # plt.plot(a)
+            # plt.show()
+            # plt.pause(0.1)
 
             if self._is_solution(solution_candidate):
                 wave_function = self._prepare_wave_function(solution_candidate)
-                # plt.gcf().clear()
-                # plt.ion()
-                # plt.plot(wave_function)
-                # potential.convert_to("eV")
-                # plt.plot(potential.value)
-                # E_current.convert_to("eV")
-                # plt.plot(E_current.value * np.ones((len(potential), ), "float64"))
-                # plt.show()
-                # plt.pause(0.1)
+                plt.gcf().clear()
+                plt.ion()
+                plt.plot(wave_function)
+                potential.convert_to("eV")
+                plt.plot(potential.value)
+                E_current.convert_to("eV")
+                plt.plot(E_current.value * np.ones((len(potential), ), "float64"))
+                plt.show()
+                plt.pause(0.1)
                 solutions.append((E_current, wave_function))
                 print "Energy:", len(solutions), E_current.value
 
                 if len(solutions) == self.solutions_limit:
                     break
-            if self.solution_history and solution_candidate[0][N * 2 / 3] != self.solution_history[-1][0][N * 2 / 3] \
-                    and len(solution_start) == 4:
-                solution_start = (solution_start[0], solution_start[1], -solution_start[2], solution_start[3])
+
+            # if self.solution_history and solution_candidate[0][N * 2 / 3] != self.solution_history[-1][0][N * 2 / 3] \
+            #         and len(solution_start) == 4:
+            #     solution_start = (solution_start[0], solution_start[1], -solution_start[2], solution_start[3])
 
             self.solution_history.append(solution_candidate)
             E_current.convert_to("eV")
             E_current.convert_to(self.dE.units)
             E_current += self.dE
             self._count += 1
+        self._clear_context()
         return solutions
 
 
@@ -133,13 +145,21 @@ class IterableSolutionStrategyNonSymmetricWell(AIterableSolutionStrategy):
         return is_solution
 
     def _prepare_wave_function(self, solution_candidate):
-        middle_index = len(solution_candidate[0]) / 2
+        middle_index = self._get_middle_index()
         k = solution_candidate[0][middle_index] / solution_candidate[2][middle_index]
         wave_function_arr = np.concatenate(
             (solution_candidate[0].value[:middle_index + 1], k * solution_candidate[2].value[middle_index + 1:]))
         wave_function = spsc_data.WaveFunction(wave_function_arr)
         wave_function.normalize()
         return wave_function
+
+    def _get_middle_index(self):
+        potential = self._context['potential']
+        if 'middle_index' in potential.meta_info:
+            middle_index = potential.meta_info['middle_index']
+        else:
+            middle_index = len(potential) / 2
+        return middle_index
 
 
 class ASolutionIteration(object):

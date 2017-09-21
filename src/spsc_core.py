@@ -143,8 +143,8 @@ class LatticeXElectronsSymmetrySolver(ASolver):
         # symmetry_solver = LatticeSymmetrySolver(self.state)
         # symmetry_solver.solve()
 
-        E_start = spsc_data.EnergyValue(0.01, "eV")
-        E_end = spsc_data.EnergyValue(0.2, "eV")
+        E_start = spsc_data.EnergyValue(0.007, "eV")
+        E_end = spsc_data.EnergyValue(0.3, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
 
         meta_info = self.state.electron_states[1].static_potential.meta_info

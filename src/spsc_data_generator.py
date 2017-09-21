@@ -170,6 +170,7 @@ def x_electrons_superlattice(file):
         x_solution_end_index = len(x_electron_state.static_potential) - 1
     x_electron_state.static_potential.meta_info['x_solution_start'] = int(x_solution_start_index)
     x_electron_state.static_potential.meta_info['x_solution_end'] = int(x_solution_end_index)
+    x_electron_state.static_potential.meta_info['middle_index'] = int(data['middle_index'])
 
     state.electron_states.append(x_electron_state)
     return state
