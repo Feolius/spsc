@@ -8,48 +8,48 @@ import spsc_constants
 import spsc_core
 import yaml
 
-# state = spsc_data_generator.single_well(spsc_data.LengthValue(26, "nm"))
-# solver = spsc_core.SymmetricWellSolver(state)
-# solver.solve()
-# state = spsc_data_generator.single_well_sloped(spsc_data.LengthValue(26, "nm"), spsc_data.ElectricFieldValue(7 * 10 ** -4, "V_per_m"))
-# solver = spsc_core.SlopedWellSolver(state)
-# solver.solve()
-state = spsc_data_generator.x_electrons_superlattice('data/data_generator/x_electrons_superlattice/sample.yml')
-solver = spsc_core.LatticeSymmetrySolver(state)
-solver.solve()
-state = solver.state
-state.export_file('data/solution.yml')
+# state = spsc_core.StateSimple.import_file('data/solutions/x_electrons_superlattice/RC1075.yml')
 
-
-# plt.plot(state.electron_states[0].static_potential)
-# plt.plot(state.electron_states[1].static_potential)
-# plt.plot(state.static_density * 10 ** (-16))
-# plt.show()
-# state.export_file('data/RC1402.yml')
-# state = spsc_core.StateSimple.import_file('data/solution.yml')
+# state = spsc_data_generator.x_electrons_superlattice('data/data_generator/x_electrons_superlattice/RC1075.yml')
 # solver = spsc_core.LatticeXElectronsSymmetrySolver(state)
 # solver.solve()
+# state = solver.state
+# state.export_file('data/solutions/x_electrons_superlattice/RC1075.yml')
+
 # state.export_file('data/solution.yml')
-# state = spsc_data_generator.superlattice_well_sloped(8, spsc_data.LengthValue(26, "nm"),
-#                                                      spsc_data.LengthValue(2.3, "nm"), spsc_data.LengthValue(1.1, "nm"),
-#                                                      spsc_data.ElectricFieldValue(1.2 * 10 ** -4, "V_per_m"))
-# solver = spsc_core.LatticeSlopedSolver(state)
-# solver.solve()
-# well = {
-#     'periods_number': 9,
-#     'well_length': 22.0,
-#     'lattice_well_length': 2.3,
-#     'lattice_barrier_length': 1.4,
-#     'delta_layer_period': 4,
-#     'delta_layer_density': 2.0 * 10 ** 16,
-#     'lattice_amplitude': 1.0,
-#     'mass': 0.068,
-#     'density': 10.0 * 10 ** 15,
-#     'x_lattice_amplitude': 0.295,
-#     'x_lattice_offset': 0.46,
-#     'mass_x': 1.2
-# }
 #
-# f = open('data/data_generator/x_electrons_superlattice/sample.yml', "w")
-# yaml.dump(well, f)
-# f.close()
+state = spsc_core.StateSimple.import_file('data/solutions/x_electrons_superlattice/RC1075.yml')
+electron_state_1 = state.electron_states[0]
+potential_1 = electron_state_1.static_potential + state.density_potential
+potential_1.convert_to("eV")
+E1 = electron_state_1.energy_levels[0]
+E1.convert_to('eV')
+plt.plot(potential_1)
+wf_1 = electron_state_1.wave_functions[0]
+plt.plot(wf_1)
+electron_state_2 = state.electron_states[1]
+potential_2 = electron_state_2.static_potential + state.density_potential
+plt.plot(potential_2)
+wf_2 = electron_state_2.wave_functions[0]
+wf_2.value = wf_2.value * 0.3
+E2 = electron_state_2.energy_levels[0]
+E2.convert_to('eV')
+electron_state_2.static_potential.convert_to('eV')
+electron_state_1.static_potential.convert_to('eV')
+plt.plot(E1.value * np.ones((len(potential_1), ), "float64"))
+plt.plot(E2.value * np.ones((len(potential_1), ), "float64"))
+plt.plot(wf_2)
+plt.show()
+
+n = spsc_data.DensityValue(10.0 * 10 ** 15, 'm^-2')
+n.convert_to(n.units_default)
+electron_state_1.mass.convert_to(electron_state_1.mass.units_default)
+g = electron_state_1.mass.value / (np.pi * spsc_constants.h_plank ** 2)
+E1.convert_to(E1.units_default)
+Ef = spsc_data.EnergyValue(n.value / g + E1.value)
+Ef.convert_to('eV')
+E1.convert_to('eV')
+print "E1: ", E1
+print "E2: ", E2
+a = 1
+

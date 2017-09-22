@@ -67,10 +67,11 @@ class LatticeSymmetrySolver(ASolver):
         mass = self.state.electron_states[0].mass
         length = self.state.length
         electron_state = self.state.electron_states[0]
-        for j in range(10):
+        for j in range(5):
             potential = static_potential + density_potential
+            potential_offset = spsc_data.EnergyValue(potential[meta_info["well_start"]], potential.units)
             potential = potential - spsc_data.Potential(
-                potential[meta_info["well_start"]] * np.ones((len(potential),), "float64"), potential.units)
+                potential_offset.value * np.ones((len(potential),), "float64"), potential_offset.units)
             potential.meta_info = meta_info
             solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0))
             for i in range(len(solutions)):
@@ -79,10 +80,11 @@ class LatticeSymmetrySolver(ASolver):
                     electron_state.wave_functions[i] = solution[1]
                 else:
                     electron_state.wave_functions.append(solution[1])
+                energy_level = solution[0] + potential_offset
                 if len(electron_state.energy_levels) > i:
-                    electron_state.energy_levels[i] = solution[0]
+                    electron_state.energy_levels[i] = energy_level
                 else:
-                    electron_state.energy_levels.append(solution[0])
+                    electron_state.energy_levels.append(energy_level)
             h = 1.0 / (len(self.state.electron_states[0].wave_functions[0]) - 1)
             electron_density = spsc_data.Density(
                 electron_state.sum_density.value * h * (electron_state.wave_functions[0].value ** 2),
@@ -110,8 +112,9 @@ class LatticeSlopedSolver(ASolver):
         electron_state = self.state.electron_states[0]
         for j in range(10):
             potential = static_potential + density_potential
+            potential_offset = spsc_data.EnergyValue(potential[meta_info["well_start"]], potential.units)
             potential = potential - spsc_data.Potential(
-                potential[meta_info["well_start"]] * np.ones((len(potential),), "float64"), potential.units)
+                potential_offset.value * np.ones((len(potential),), "float64"), potential_offset.units)
             potential.meta_info = meta_info
             solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0, 10.0 ** -25, 0))
             for i in range(len(solutions)):
@@ -120,10 +123,11 @@ class LatticeSlopedSolver(ASolver):
                     electron_state.wave_functions[i] = solution[1]
                 else:
                     electron_state.wave_functions.append(solution[1])
+                energy_level = solution[0] + potential_offset
                 if len(electron_state.energy_levels) > i:
-                    electron_state.energy_levels[i] = solution[0]
+                    electron_state.energy_levels[i] = energy_level
                 else:
-                    electron_state.energy_levels.append(solution[0])
+                    electron_state.energy_levels.append(energy_level)
             h = 1.0 / (len(self.state.electron_states[0].wave_functions[0]) - 1)
             electron_density = spsc_data.Density(
                 electron_state.sum_density.value * h * (electron_state.wave_functions[0].value ** 2),
@@ -140,10 +144,10 @@ class LatticeSlopedSolver(ASolver):
 
 class LatticeXElectronsSymmetrySolver(ASolver):
     def solve(self):
-        # symmetry_solver = LatticeSymmetrySolver(self.state)
-        # symmetry_solver.solve()
+        symmetry_solver = LatticeSymmetrySolver(self.state)
+        symmetry_solver.solve()
 
-        E_start = spsc_data.EnergyValue(0.007, "eV")
+        E_start = spsc_data.EnergyValue(0.005, "eV")
         E_end = spsc_data.EnergyValue(0.3, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
 
@@ -156,8 +160,11 @@ class LatticeXElectronsSymmetrySolver(ASolver):
                                 meta_info['x_solution_start']:meta_info['x_solution_end']]
 
         potential_arr = static_potential_arr + density_potential_arr
-        potential_arr = potential_arr - np.amin(potential_arr)
         potential = spsc_data.Potential(potential_arr, "eV")
+        potential_offset = spsc_data.EnergyValue(np.amin(potential_arr), 'eV')
+        potential = potential - spsc_data.Potential(
+            potential_offset.value * np.ones((len(potential),), "float64"), potential_offset.units)
+        potential.meta_info = meta_info
 
         mass = self.state.electron_states[1].mass
         length = self.state.length
@@ -165,8 +172,18 @@ class LatticeXElectronsSymmetrySolver(ASolver):
         solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 1,
                                                                                 iteration_factory)
         solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0, 10.0 ** -25, 0))
+
         wave_function = solutions[0][1]
-        wave_function.instant_plot()
+        zeros = np.zeros((len(self.state.density_potential),))
+        wave_function_full_arr = np.concatenate((zeros[:meta_info['x_solution_start']], wave_function.value, zeros[meta_info['x_solution_end']:]))
+        wave_function = spsc_data.WaveFunction(wave_function_full_arr)
+        wave_function.mirror()
+        wave_function.normalize()
+        self.state.electron_states[1].wave_functions.append(wave_function)
+
+        energy_level = solutions[0][0]
+        energy_level = energy_level + potential_offset
+        self.state.electron_states[1].energy_levels.append(energy_level)
 
 
 class AState(spsc_io.Default):

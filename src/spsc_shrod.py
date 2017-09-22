@@ -73,15 +73,15 @@ class AIterableSolutionStrategy(ASolutionStrategy):
 
             if self._is_solution(solution_candidate):
                 wave_function = self._prepare_wave_function(solution_candidate)
-                plt.gcf().clear()
-                plt.ion()
-                plt.plot(wave_function)
-                potential.convert_to("eV")
-                plt.plot(potential.value)
+                # plt.gcf().clear()
+                # plt.ion()
+                # plt.plot(wave_function)
+                # potential.convert_to("eV")
+                # plt.plot(potential.value)
                 E_current.convert_to("eV")
-                plt.plot(E_current.value * np.ones((len(potential), ), "float64"))
-                plt.show()
-                plt.pause(0.1)
+                # plt.plot(E_current.value * np.ones((len(potential), ), "float64"))
+                # plt.show()
+                # plt.pause(0.1)
                 solutions.append((E_current, wave_function))
                 print "Energy:", len(solutions), E_current.value
 

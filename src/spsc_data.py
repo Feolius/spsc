@@ -15,7 +15,7 @@ class APhysValue(spsc_io.Default):
     def units_options(self):
         return {}
 
-    _meta_info = {}
+    _meta_info = None
 
     def meta_info_getter(self):
         return self._meta_info
@@ -27,6 +27,7 @@ class APhysValue(spsc_io.Default):
     meta_info = property(meta_info_getter, meta_info_setter)
 
     def __init__(self, value, units=None):
+        self.meta_info = {}
         if units is None:
             units = self.units_default
         if self._is_valid_units(units):
