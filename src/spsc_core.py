@@ -62,12 +62,12 @@ class LatticeSymmetrySolver(ASolver):
         static_potential = self.state.electron_states[0].static_potential
         meta_info = static_potential.meta_info
         iteration_factory = spsc_shrod.SolutionIterationSymmetryLatticeFactory()
-        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 1, iteration_factory)
+        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 2, iteration_factory)
         density_potential = self.state.density_potential
         mass = self.state.electron_states[0].mass
         length = self.state.length
         electron_state = self.state.electron_states[0]
-        for j in range(5):
+        for j in range(7):
             potential = static_potential + density_potential
             potential_offset = spsc_data.EnergyValue(potential[meta_info["well_start"]], potential.units)
             potential = potential - spsc_data.Potential(
