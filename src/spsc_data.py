@@ -290,3 +290,6 @@ class WaveFunction(APhysValueArray, EmptyUnitsValue):
 class Density(APhysValueArray, DensityValue):
     pass
 
+
+class MassArray(APhysValueArray, MassValue):
+    pass

@@ -174,3 +174,43 @@ def x_electrons_superlattice(file):
 
     state.electron_states.append(x_electron_state)
     return state
+
+def simple_superlattice_diff_mass(file):
+    f = open(file, 'r')
+    data = yaml.load(f)
+    f.close()
+
+    well_length = spsc_data.LengthValue(data['well_length'], 'nm')
+    lattice_well_length = spsc_data.LengthValue(data['lattice_well_length'], 'nm')
+    lattice_barrier_length = spsc_data.LengthValue(data['lattice_barrier_length'], 'nm')
+
+    state = superlattice_well(data['periods_number'], well_length, lattice_well_length, lattice_barrier_length)
+    electron_state = state.electron_states[0]
+
+    mass = spsc_data.MassArray(data['barrier_mass'] * np.ones((int(lattice_barrier_length.value * DOTS_PER_NM),), "float64"))
+    for i in range(data['periods_number']):
+        mass.append(
+            spsc_data.MassArray(data['well_mass'] * np.ones((int(lattice_well_length.value * DOTS_PER_NM),), "float64")))
+        mass.append(
+            spsc_data.MassArray(data['barrier_mass'] * np.ones((int(lattice_barrier_length.value * DOTS_PER_NM),), "float64")))
+    mass.append(spsc_data.MassArray(data['well_mass'] * np.ones((int(well_length.value * DOTS_PER_NM),), "float64")))
+    empty_dots = len(electron_state.static_potential) - len(mass)
+    mass.append(spsc_data.MassArray(np.zeros((empty_dots,), "float64")))
+    mass = mass * constants.m_e
+    mass.mirror()
+    electron_state.mass = mass
+
+    electron_state.sum_density = spsc_data.DensityValue(data['density'], "m^-2")
+    electron_state.static_potential.value = electron_state.static_potential.value * data['lattice_amplitude']
+
+    lattice_well_length.convert_to("nm")
+    lattice_barrier_length.convert_to("nm")
+    delta_layer_index = (data['delta_layer_period'] - 1) * (
+        lattice_well_length.value + lattice_barrier_length.value) * DOTS_PER_NM + \
+                        lattice_well_length.value * DOTS_PER_NM / 2 + lattice_barrier_length.value * DOTS_PER_NM
+    delta_layer_index = int(delta_layer_index)
+    state.static_density.convert_to('m^-2')
+    state.static_density[delta_layer_index] = data['delta_layer_density']
+    state.static_density.mirror()
+    state.electron_states[0].static_potential.meta_info['delta_layer_index'] = delta_layer_index
+    return state
