@@ -201,7 +201,7 @@ class SolutionIterationFlatPotential(ASolutionIteration):
         for i in range(N):
             x = float(i) / (N - 1)
             if self.potential[i] != potential_level:
-                AB_transition_matrix = self._get_AB_transition_matrix(potential_level, self.potential[i], E, x)
+                AB_transition_matrix = self._get_AB_transition_matrix(E, i)
                 (A, B) = np.dot(AB_transition_matrix, np.array([A, B]))
                 potential_level = self.potential[i]
             if E < potential_level:
@@ -212,15 +212,17 @@ class SolutionIterationFlatPotential(ASolutionIteration):
                 k = np.sqrt((E - potential_level) * gamma)
                 solution[0][i] = A * np.sin(k * x) + B * np.cos(k * x)
                 solution[1][i] = A * k * np.cos(k * x) - B * k * np.sin(k * x)
-
         return solution
 
     def _get_initial_AB(self, E, solution_start):
         # TODO need to implement this method properly
         return solution_start[0], 0
 
-    def _get_AB_transition_matrix(self, prev_potential_level, new_potential_level, E, x):
+    def _get_AB_transition_matrix(self, E, i):
         transition_matrix = np.zeros((2, 2))
+        prev_potential_level = self.potential[i - 1]
+        new_potential_level = self.potential[i]
+        x = float(i) / (len(self.potential) - 1)
         gamma = 2.0 * self.mass.value * (self.length.value ** 2) / (constants.h_plank ** 2)
         if E < prev_potential_level and E < new_potential_level:
             k1 = np.sqrt((prev_potential_level - E) * gamma)
@@ -249,6 +251,67 @@ class SolutionIterationFlatPotential(ASolutionIteration):
 class SolutionIterationFlatPotentialFactory(ASolutionIterationFactory):
     def get_iteration(self, potential, mass, length):
         return SolutionIterationFlatPotential(potential, mass, length)
+
+
+class SolutionIterationFlatPotentialDiffMass(SolutionIterationFlatPotential):
+    def solve(self, E, solution_start):
+        self._reset_to_default_units()
+        E.convert_to(E.units_default)
+        E = E.value
+        N = len(self.potential)
+        solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
+        gamma = 2.0 * (self.length.value ** 2) / (constants.h_plank ** 2)
+        (A, B) = self._get_initial_AB(E, solution_start)
+        potential_level = self.potential[0]
+        for i in range(N):
+            x = float(i) / (N - 1)
+            if self.potential[i] != potential_level:
+                AB_transition_matrix = self._get_AB_transition_matrix(E, i)
+                (A, B) = np.dot(AB_transition_matrix, np.array([A, B]))
+                potential_level = self.potential[i]
+            if E < potential_level:
+                k = np.sqrt((potential_level - E) * gamma * self.mass.value[i])
+                solution[0][i] = A * np.exp(k * x) + B * np.exp(-k * x)
+                solution[1][i] = A * k * np.exp(k * x) - B * k * np.exp(-k * x)
+            else:
+                k = np.sqrt((E - potential_level) * gamma * self.mass.value[i])
+                solution[0][i] = A * np.sin(k * x) + B * np.cos(k * x)
+                solution[1][i] = A * k * np.cos(k * x) - B * k * np.sin(k * x)
+        return solution
+
+    def _get_AB_transition_matrix(self, E, i):
+        transition_matrix = np.zeros((2, 2))
+        prev_potential_level = self.potential[i - 1]
+        new_potential_level = self.potential[i]
+        x = float(i) / (len(self.potential) - 1)
+        gamma = 2.0 * (self.length.value ** 2) / (constants.h_plank ** 2)
+        if E < prev_potential_level and E < new_potential_level:
+            k1 = np.sqrt((prev_potential_level - E) * gamma * self.mass.value[i - 1])
+            k2 = np.sqrt((new_potential_level - E) * gamma * self.mass.value[i])
+            transition_matrix[0][0] = np.exp(k1 * x) * np.exp(-k2 * x) * ((k1 / k2) + 1) / 2
+            transition_matrix[0][1] = np.exp(-k1 * x) * np.exp(-k2 * x) * (1 - (k1 / k2)) / 2
+            transition_matrix[1][0] = np.exp(k1 * x) * np.exp(k2 * x) * (1 - (k1 / k2)) / 2
+            transition_matrix[1][1] = np.exp(-k1 * x) * np.exp(k2 * x) * ((k1 / k2) + 1) / 2
+        elif E > prev_potential_level:
+            k1 = np.sqrt((E - prev_potential_level) * gamma * self.mass.value[i - 1])
+            k2 = np.sqrt((new_potential_level - E) * gamma * self.mass.value[i])
+            transition_matrix[0][0] = (k1 / (2 * k2) * np.cos(k1 * x) + np.sin(k1 * x) / 2) * np.exp(-k2 * x)
+            transition_matrix[0][1] = (-k1 / (2 * k2) * np.sin(k1 * x) + np.cos(k1 * x) / 2) * np.exp(-k2 * x)
+            transition_matrix[1][0] = (-k1 / (2 * k2) * np.cos(k1 * x) + np.sin(k1 * x) / 2) * np.exp(k2 * x)
+            transition_matrix[1][1] = (k1 / (2 * k2) * np.sin(k1 * x) + np.cos(k1 * x) / 2) * np.exp(k2 * x)
+        else:
+            k1 = np.sqrt((prev_potential_level - E) * gamma * self.mass.value[i - 1])
+            k2 = np.sqrt((E - new_potential_level) * gamma * self.mass.value[i])
+            transition_matrix[0][0] = np.exp(k1 * x) * (k1 / k2 * np.cos(k2 * x) + np.sin(k2 * x))
+            transition_matrix[0][1] = np.exp(-k1 * x) * (np.sin(k2 * x) - k1 / k2 * np.cos(k2 * x))
+            transition_matrix[1][0] = np.exp(k1 * x) * (np.cos(k2 * x) - k1 / (k2) * np.sin(k2 * x))
+            transition_matrix[1][1] = np.exp(-k1 * x) * (k1 / k2 * np.sin(k2 * x) + np.cos(k2 * x))
+        return transition_matrix
+
+
+class SolutionIterationFlatPotentialDiffMassFactory(ASolutionIterationFactory):
+    def get_iteration(self, potential, mass, length):
+        return SolutionIterationFlatPotentialDiffMass(potential, mass, length)
 
 
 class SolutionIterationSlopePotential(ASolutionIteration):
@@ -470,6 +533,43 @@ class SolutionIterationSymmetryLattice(ASolutionIteration):
 class SolutionIterationSymmetryLatticeFactory(ASolutionIterationFactory):
     def get_iteration(self, potential, mass, length):
         return SolutionIterationSymmetryLattice(potential, mass, length)
+
+
+class SolutionIterationSymmetryLatticeDiffMass(SolutionIterationSymmetryLattice):
+    def solve(self, E, solution_start):
+        self._reset_to_default_units()
+        E.convert_to(E.units_default)
+        lattice_potential = spsc_data.Potential(self.potential[:self.well_start], self.potential.units)
+        flat_lattice_potential = self._flatten_potential(lattice_potential)
+        lattice_length = spsc_data.LengthValue(
+            self.length.value * (len(flat_lattice_potential) - 1) / (len(self.potential) - 1),
+            self.length.units)
+        lattice_mass = spsc_data.MassArray(self.mass[:len(flat_lattice_potential)])
+        iteration = SolutionIterationFlatPotentialDiffMass(flat_lattice_potential, lattice_mass, lattice_length)
+        lattice_solution = iteration.solve(E, solution_start)
+
+        well_solution_start = (lattice_solution[0][-1], lattice_solution[1][-1])
+        well_potential = spsc_data.Potential(self.potential[self.well_start:self.well_end], self.potential.units)
+        well_length = spsc_data.LengthValue(self.length.value * len(well_potential) / (len(self.potential) - 1),
+                                            self.length.units)
+        well_mass = spsc_data.MassValue(self.mass.value[self.well_start])
+        iteration = SolutionIterationRungeKutt(well_potential, well_mass, well_length)
+        well_solution = iteration.solve(E, well_solution_start)
+
+        N = len(self.potential)
+        solution = (spsc_data.WaveFunction(np.zeros((N,))), spsc_data.WaveFunction(np.zeros((N,))))
+        solution[0][:len(lattice_solution[0])] = lattice_solution[0]
+        solution[0][len(lattice_solution[0]) - 1:len(lattice_solution[0]) + len(well_solution[0]) - 1] = well_solution[
+            0]
+        solution[1][:len(lattice_solution[1])] = lattice_solution[1]
+        solution[1][len(lattice_solution[1]) - 1:len(lattice_solution[1]) + len(well_solution[1]) - 1] = well_solution[
+            1]
+        return solution
+
+
+class SolutionIterationSymmetryLatticeDiffMassFactory(ASolutionIterationFactory):
+    def get_iteration(self, potential, mass, length):
+        return SolutionIterationSymmetryLatticeDiffMass(potential, mass, length)
 
 
 class SolutionIterationSlopedLattice(ASolutionIteration):
