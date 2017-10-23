@@ -545,6 +545,9 @@ class SolutionIterationSymmetryLatticeDiffMass(SolutionIterationSymmetryLattice)
             self.length.value * (len(flat_lattice_potential) - 1) / (len(self.potential) - 1),
             self.length.units)
         lattice_mass = spsc_data.MassArray(self.mass[:len(flat_lattice_potential)])
+        # Need this because the last point in the lattice potential is artificial,
+        # and we need to keep the same mass as it was in the last point.
+        lattice_mass.value[-1] = lattice_mass.value[-2]
         iteration = SolutionIterationFlatPotentialDiffMass(flat_lattice_potential, lattice_mass, lattice_length)
         lattice_solution = iteration.solve(E, solution_start)
 

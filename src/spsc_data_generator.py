@@ -175,6 +175,7 @@ def x_electrons_superlattice(file):
     state.electron_states.append(x_electron_state)
     return state
 
+
 def simple_superlattice_diff_mass(file):
     f = open(file, 'r')
     data = yaml.load(f)
@@ -213,4 +214,40 @@ def simple_superlattice_diff_mass(file):
     state.static_density[delta_layer_index] = data['delta_layer_density']
     state.static_density.mirror()
     state.electron_states[0].static_potential.meta_info['delta_layer_index'] = delta_layer_index
+    return state
+
+
+def x_electrons_superlattice_diff_mass(file):
+    f = open(file, 'r')
+    data = yaml.load(f)
+    f.close()
+
+    well_length = spsc_data.LengthValue(data['well_length'], 'nm')
+    lattice_well_length = spsc_data.LengthValue(data['lattice_well_length'], 'nm')
+    lattice_barrier_length = spsc_data.LengthValue(data['lattice_barrier_length'], 'nm')
+
+    state = superlattice_well(data['periods_number'], well_length, lattice_well_length, lattice_barrier_length)
+    x_electron_state = state.electron_states[0]
+    x_electron_state.mass = x_electron_state.mass * data['well_mass_x']
+    x_electron_state.sum_density = spsc_data.DensityValue(0, "m^-2")
+    x_electron_state.static_potential.value = x_electron_state.static_potential.value - 1
+    x_electron_state.static_potential.value = x_electron_state.static_potential.value * (-data['x_lattice_amplitude'])
+    x_electron_state.static_potential.value = x_electron_state.static_potential.value + data['x_lattice_offset']
+
+    state = simple_superlattice_diff_mass(file)
+
+    # Denote start and end indexes for X-electron solutions
+    delta_layer_index = state.electron_states[0].static_potential.meta_info['delta_layer_index']
+    delta_layer_offset = 2 * (lattice_well_length.value + lattice_barrier_length.value) * DOTS_PER_NM
+    x_solution_start_index = delta_layer_index - delta_layer_offset
+    if x_solution_start_index < 0:
+        x_solution_start_index = 0
+    x_solution_end_index = delta_layer_index + delta_layer_offset
+    if x_solution_end_index > (len(x_electron_state.static_potential) - 1):
+        x_solution_end_index = len(x_electron_state.static_potential) - 1
+    x_electron_state.static_potential.meta_info['x_solution_start'] = int(x_solution_start_index)
+    x_electron_state.static_potential.meta_info['x_solution_end'] = int(x_solution_end_index)
+    x_electron_state.static_potential.meta_info['middle_index'] = int(data['middle_index'])
+
+    state.electron_states.append(x_electron_state)
     return state
