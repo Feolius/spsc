@@ -12,13 +12,13 @@ import matplotlib.pyplot as plt
 # plt.plot(electron_state.static_potential)
 # plt.show()
 
-# state = spsc_data_generator.x_electrons_superlattice_diff_mass('data/data_generator/x_electrons_superlattice_diff_mass/sample.yml')
-# solver = spsc_core.LatticeXElectronsSymmetrySolver(state)
-# solver.solve()
-# state = solver.state
-# state.export_file('data/solutions/x_electrons_superlattice/RC1075.yml')
+state = spsc_data_generator.x_electrons_superlattice_diff_mass('data/data_generator/x_electrons_superlattice_diff_mass/sample.yml')
+solver = spsc_core.LatticeXElectronsSymmetrySolver(state)
+solver.solve()
+state = solver.state
+state.export_file('data/solutions/x_electrons_superlattice/RC1075.yml')
 #
-state = spsc_core.StateSimple.import_file('data/solutions/x_electrons_superlattice/RC1075.yml')
+# state = spsc_core.StateSimple.import_file('data/solutions/x_electrons_superlattice/RC1075.yml')
 electron_state_1 = state.electron_states[0]
 potential_1 = electron_state_1.static_potential + state.density_potential
 potential_1.convert_to("eV")
