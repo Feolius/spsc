@@ -4,16 +4,10 @@ import spsc_data
 import spsc_constants
 import numpy as np
 import matplotlib.pyplot as plt
-
-# state = spsc_data_generator.simple_superlattice_diff_mass('data/data_generator/x_electrons_superlattice_diff_mass/sample.yml')
-# electron_state = state.electron_states[0]
-# plt.plot(electron_state.mass)
-# electron_state.static_potential.value = electron_state.static_potential.value * electron_state.mass.value[0]
-# plt.plot(electron_state.static_potential)
-# plt.show()
+import spsc_solver
 
 state = spsc_data_generator.x_electrons_superlattice_diff_mass('data/data_generator/x_electrons_superlattice_diff_mass/sample.yml')
-solver = spsc_core.LatticeXElectronsSymmetrySolver(state)
+solver = spsc_solver.LatticeXElectronsSymmetrySolver(state)
 solver.solve()
 state = solver.state
 state.export_file('data/solutions/x_electrons_superlattice/RC1075.yml')
@@ -70,11 +64,5 @@ print "Ef1: ", Ef1
 print "Ef2: ", Ef2
 print "Ex: ", Ex
 
-# E1:  0.209943854689 eV
-# E2:  0.220043854689 eV
-# dE:  0.0101 eV
-# Ef1:  0.0170370147962 eV
-# Ef2:  0.00693701479618 eV
-# Ex:  0.1915 eV
 
 # import start_scripts.RC1075

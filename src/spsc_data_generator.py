@@ -189,7 +189,7 @@ def simple_superlattice_diff_mass(file):
     electron_state = state.electron_states[0]
 
     mass = spsc_data.MassArray(data['barrier_mass'] * np.ones((int(lattice_barrier_length.value * DOTS_PER_NM),), "float64"))
-    for i in range(data['periods_number']):
+    for i in xrange(data['periods_number']):
         mass.append(
             spsc_data.MassArray(data['well_mass'] * np.ones((int(lattice_well_length.value * DOTS_PER_NM),), "float64")))
         mass.append(

@@ -6,12 +6,13 @@ import src.spsc_data_generator as spsc_data_generator
 import src.spsc_data as spsc_data
 import src.spsc_constants as spsc_constants
 import src.spsc_core as spsc_core
+import src.spsc_solver as spsc_solver
 import yaml
 
 # state = spsc_core.StateSimple.import_file('data/solutions/x_electrons_superlattice/RC1075.yml')
 
 state = spsc_data_generator.x_electrons_superlattice('data/data_generator/x_electrons_superlattice/RC1075.yml')
-solver = spsc_core.LatticeXElectronsSymmetrySolver(state)
+solver = spsc_solver.LatticeXElectronsSymmetrySolver(state)
 solver.solve()
 state = solver.state
 state.export_file('data/solutions/x_electrons_superlattice/RC1075.yml')

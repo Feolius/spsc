@@ -198,7 +198,7 @@ class SolutionIterationFlatPotential(ASolutionIteration):
         gamma = 2.0 * self.mass.value * (self.length.value ** 2) / (constants.h_plank ** 2)
         (A, B) = self._get_initial_AB(E, solution_start)
         potential_level = self.potential[0]
-        for i in range(N):
+        for i in xrange(N):
             x = float(i) / (N - 1)
             if self.potential[i] != potential_level:
                 AB_transition_matrix = self._get_AB_transition_matrix(E, i)
@@ -263,7 +263,7 @@ class SolutionIterationFlatPotentialDiffMass(SolutionIterationFlatPotential):
         gamma = 2.0 * (self.length.value ** 2) / (constants.h_plank ** 2)
         (A, B) = self._get_initial_AB(E, solution_start)
         potential_level = self.potential[0]
-        for i in range(N):
+        for i in xrange(N):
             x = float(i) / (N - 1)
             if self.potential[i] != potential_level:
                 AB_transition_matrix = self._get_AB_transition_matrix(E, i)
@@ -353,7 +353,7 @@ class SolutionIterationSlopePotential(ASolutionIteration):
         (A, B) = self._get_initial_left_AB(E, solution_start[0], solution_start[1])
         U = self._get_U(0)
         U.convert_to("eV")
-        for i in range(N * 2 / 3):
+        for i in xrange(N * 2 / 3):
             if i > 0 and abs(self.potential[i] - self.potential[i - 1]) > potential_threshold:
                 (A, B) = self._get_AB(E, i - 1, i, solution[0][i - 1], solution[1][i - 1])
                 U = self._get_U(i)
@@ -364,7 +364,7 @@ class SolutionIterationSlopePotential(ASolutionIteration):
 
         (A, B) = self._get_initial_right_AB(E, solution_start[2], solution_start[3])
         U = self._get_U(N - 1)
-        for i in range(N - 1, N / 3, -1):
+        for i in xrange(N - 1, N / 3, -1):
             if i < N - 1 and abs(self.potential[i] - self.potential[i + 1]) > potential_threshold:
                 (A, B) = self._get_AB(E, i + 1, i, solution[2][i + 1], solution[3][i + 1])
                 U = self._get_U(i)
@@ -435,7 +435,7 @@ class SolutionIterationRungeKutt(ASolutionIteration):
         solution[1][0] = solution_start[1]
         h = 1.0 / (N - 1)
         h1 = h / 6
-        for i in range(1, N):
+        for i in xrange(1, N):
             (k, q) = self._k_q(i, solution[0][i - 1], solution[1][i - 1], E)
             solution[0][i] = solution[0][i - 1] + h1 * (k[0] + 2 * k[1] + 2 * k[2] + k[3])
             solution[1][i] = solution[1][i - 1] + h1 * (q[0] + 2 * q[1] + 2 * q[2] + q[3])

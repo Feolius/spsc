@@ -21,8 +21,8 @@ class GaussSolutionStrategy(ASolutionStrategy):
         density.convert_to(density.units_default)
         potential = spsc_data.Potential(np.zeros((N,), "float64"))
         k = 2.0 * np.pi * (constants.e ** 2) * length.value * h / eps
-        for i in range(N):
-            for j in range(N):
+        for i in xrange(N):
+            for j in xrange(N):
                 if i > j:
                     potential[i] += k * density[j] * (i - 2*j)
                 else:

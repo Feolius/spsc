@@ -282,7 +282,7 @@ class WaveFunction(APhysValueArray, EmptyUnitsValue):
     def normalize(self):
         square = 0
         h = 1.0 / (len(self) - 1)
-        for i in range(len(self)):
+        for i in xrange(len(self)):
             square += self[i] * self[i] * h
         self.value = self.value / square ** 0.5
 
