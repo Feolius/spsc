@@ -60,7 +60,7 @@ class LatticeSymmetrySolver(ASolver):
         # E_end = spsc_data.EnergyValue(0.4, "eV")
         # 13 nm well
         E_start = spsc_data.EnergyValue(0.01, "eV")
-        E_end = spsc_data.EnergyValue(0.12, "eV")
+        E_end = spsc_data.EnergyValue(0.08, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
         static_potential = self.state.electron_states[0].static_potential
         meta_info = static_potential.meta_info
@@ -69,7 +69,7 @@ class LatticeSymmetrySolver(ASolver):
             iteration_factory = spsc_shrod.SolutionIterationSymmetryLatticeDiffMassFactory()
         else:
             iteration_factory = spsc_shrod.SolutionIterationSymmetryLatticeFactory()
-        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 2, iteration_factory)
+        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 1, iteration_factory)
         density_potential = self.state.density_potential
         length = self.state.length
         electron_state = self.state.electron_states[0]
@@ -210,48 +210,48 @@ class LatticeXElectronsSymmetrySolver(ASolver):
         symmetry_solver = LatticeSymmetrySolver(self.state)
         symmetry_solver.solve()
 
-        for j in xrange(5):
-            self.__gamma_shrod()
-            self.__x_shrod()
-            self.state.density_potential = self.__solve_puass()
+        # for j in xrange(5):
+        #     self.__gamma_shrod()
+        #     self.__x_shrod()
+        #     self.state.density_potential = self.__solve_puass()
 
-        # E_start = spsc_data.EnergyValue(0.005, "eV")
-        # E_end = spsc_data.EnergyValue(0.3, "eV")
-        # dE = spsc_data.EnergyValue(0.0001, "eV")
-        #
-        # meta_info = self.state.electron_states[1].static_potential.meta_info
-        # self.state.electron_states[1].static_potential.convert_to('eV')
-        # self.state.density_potential.convert_to('eV')
-        # static_potential_arr = self.state.electron_states[1].static_potential.value[
-        #                        meta_info['x_solution_start']:meta_info['x_solution_end']]
-        # density_potential_arr = self.state.density_potential.value[
-        #                         meta_info['x_solution_start']:meta_info['x_solution_end']]
-        #
-        # potential_arr = static_potential_arr + density_potential_arr
-        # potential = spsc_data.Potential(potential_arr, "eV")
-        # potential_offset = spsc_data.EnergyValue(np.amin(potential_arr), 'eV')
-        # potential = potential - spsc_data.Potential(
-        #     potential_offset.value * np.ones((len(potential),), "float64"), potential_offset.units)
-        # potential.meta_info = meta_info
-        #
-        # mass = self.state.electron_states[1].mass
-        # length = self.state.length
-        # iteration_factory = spsc_shrod.SolutionIterationRungeKuttFactory()
-        # solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 1,
-        #                                                                         iteration_factory)
-        # solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0, 10.0 ** -25, 0))
-        #
-        # wave_function = solutions[0][1]
-        # zeros = np.zeros((len(self.state.density_potential),))
-        # wave_function_full_arr = np.concatenate((zeros[:meta_info['x_solution_start']], wave_function.value, zeros[meta_info['x_solution_end']:]))
-        # wave_function = spsc_data.WaveFunction(wave_function_full_arr)
-        # wave_function.mirror()
-        # wave_function.normalize()
-        # self.state.electron_states[1].wave_functions.append(wave_function)
-        #
-        # energy_level = solutions[0][0]
-        # energy_level = energy_level + potential_offset
-        # self.state.electron_states[1].energy_levels.append(energy_level)
+        E_start = spsc_data.EnergyValue(0.005, "eV")
+        E_end = spsc_data.EnergyValue(0.3, "eV")
+        dE = spsc_data.EnergyValue(0.0001, "eV")
+
+        meta_info = self.state.electron_states[1].static_potential.meta_info
+        self.state.electron_states[1].static_potential.convert_to('eV')
+        self.state.density_potential.convert_to('eV')
+        static_potential_arr = self.state.electron_states[1].static_potential.value[
+                               meta_info['x_solution_start']:meta_info['x_solution_end']]
+        density_potential_arr = self.state.density_potential.value[
+                                meta_info['x_solution_start']:meta_info['x_solution_end']]
+
+        potential_arr = static_potential_arr + density_potential_arr
+        potential = spsc_data.Potential(potential_arr, "eV")
+        potential_offset = spsc_data.EnergyValue(np.amin(potential_arr), 'eV')
+        potential = potential - spsc_data.Potential(
+            potential_offset.value * np.ones((len(potential),), "float64"), potential_offset.units)
+        potential.meta_info = meta_info
+
+        mass = self.state.electron_states[1].mass
+        length = self.state.length
+        iteration_factory = spsc_shrod.SolutionIterationRungeKuttFactory()
+        solution_strategy = spsc_shrod.IterableSolutionStrategyNonSymmetricWell(E_start, E_end, dE, 1,
+                                                                                iteration_factory)
+        solutions = solution_strategy.solve(potential, mass, length, (10.0 ** -20, 0, 10.0 ** -25, 0))
+
+        wave_function = solutions[0][1]
+        zeros = np.zeros((len(self.state.density_potential),))
+        wave_function_full_arr = np.concatenate((zeros[:meta_info['x_solution_start']], wave_function.value, zeros[meta_info['x_solution_end']:]))
+        wave_function = spsc_data.WaveFunction(wave_function_full_arr)
+        wave_function.mirror()
+        wave_function.normalize()
+        self.state.electron_states[1].wave_functions.append(wave_function)
+
+        energy_level = solutions[0][0]
+        energy_level = energy_level + potential_offset
+        self.state.electron_states[1].energy_levels.append(energy_level)
 
     def __gamma_shrod(self):
         E_start = spsc_data.EnergyValue(0.001, "eV")
