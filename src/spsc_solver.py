@@ -55,8 +55,12 @@ class SlopedWellSolver(ASolver):
 
 class LatticeSymmetrySolver(ASolver):
     def solve(self):
-        E_start = spsc_data.EnergyValue(0.001, "eV")
-        E_end = spsc_data.EnergyValue(0.4, "eV")
+        # 30 nm well
+        # E_start = spsc_data.EnergyValue(0.001, "eV")
+        # E_end = spsc_data.EnergyValue(0.4, "eV")
+        # 13 nm well
+        E_start = spsc_data.EnergyValue(0.01, "eV")
+        E_end = spsc_data.EnergyValue(0.12, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
         static_potential = self.state.electron_states[0].static_potential
         meta_info = static_potential.meta_info
@@ -342,7 +346,7 @@ class LatticeXElectronsSymmetrySolver(ASolver):
         else:
             E2 = electron_state_gamma.energy_levels[0].value
             E_Fermi_value = (n + dos_gamma * (E1 + E2) + dos_x * Ex) / (2 * dos_gamma + dos_x)
-            ...
+            # ...
 
 
     def __get_dos_gamma(self):

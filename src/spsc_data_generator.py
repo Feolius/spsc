@@ -170,7 +170,9 @@ def x_electrons_superlattice(file):
         x_solution_end_index = len(x_electron_state.static_potential) - 1
     x_electron_state.static_potential.meta_info['x_solution_start'] = int(x_solution_start_index)
     x_electron_state.static_potential.meta_info['x_solution_end'] = int(x_solution_end_index)
-    x_electron_state.static_potential.meta_info['middle_index'] = int(data['middle_index'])
+    middle_index = (int(x_solution_end_index) - int(x_solution_start_index)) / 2
+    middle_index += (lattice_well_length.value + lattice_barrier_length.value) / 2 * DOTS_PER_NM
+    x_electron_state.static_potential.meta_info['middle_index'] = int(middle_index)
 
     state.electron_states.append(x_electron_state)
     return state
@@ -247,7 +249,9 @@ def x_electrons_superlattice_diff_mass(file):
         x_solution_end_index = len(x_electron_state.static_potential) - 1
     x_electron_state.static_potential.meta_info['x_solution_start'] = int(x_solution_start_index)
     x_electron_state.static_potential.meta_info['x_solution_end'] = int(x_solution_end_index)
-    x_electron_state.static_potential.meta_info['middle_index'] = int(data['middle_index'])
+    middle_index = (int(x_solution_end_index) - int(x_solution_start_index)) / 2
+    middle_index += (lattice_well_length.value + lattice_barrier_length.value) / 2 * DOTS_PER_NM
+    x_electron_state.static_potential.meta_info['middle_index'] = int(middle_index)
 
     state.electron_states.append(x_electron_state)
     return state
