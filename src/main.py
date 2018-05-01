@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import spsc_solver
 
 state = spsc_data_generator.x_electrons_superlattice_diff_mass('data/data_generator/x_electrons_superlattice_diff_mass/sample.yml')
+# state = spsc_core.StateSimple.import_file('data/solutions/x_electrons_superlattice/RC1075.yml')
 solver = spsc_solver.LatticeXElectronsSymmetrySolver(state)
 solver.solve()
 state = solver.state
