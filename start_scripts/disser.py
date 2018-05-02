@@ -29,9 +29,14 @@ ax.spines['top'].set_visible(False)
 # Only show ticks on the left and bottom spines
 ax.yaxis.set_ticks_position('left')
 ax.xaxis.set_ticks_position('bottom')
-ax.set_xlabel('Z, nm')
-ax.set_ylabel('V, eV')
-ax.legend((r'$\Gamma$', 'X'))
+ax.set_xlabel('Z, nm', fontsize=16)
+ax.set_ylabel('V, eV', fontsize=16)
+ax.legend((r'$\Gamma$', 'X'), fontsize=11)
+for tick in ax.xaxis.get_major_ticks():
+    tick.label.set_fontsize(16)
+for tick in ax.yaxis.get_major_ticks():
+    tick.label.set_fontsize(16)
+# plt.savefig("GaAs_AlAs_init_potential.png", dpi=400, bbox_inches='tight')
 plt.show()
 solver = spsc_solver.LatticeXElectronsSymmetrySolver(state)
 solver.solve()
