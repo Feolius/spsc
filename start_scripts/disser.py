@@ -10,15 +10,29 @@ import src.spsc_solver as spsc_solver
 import yaml
 
 state = spsc_data_generator.x_electrons_superlattice_diff_mass('data/data_generator/x_electrons_superlattice_diff_mass/disser.yml')
-# electron_state_1 = state.electron_states[0]
-# potential_1 = electron_state_1.static_potential + state.density_potential
-# potential_1.convert_to("eV")
-# electron_state_2 = state.electron_states[1]
-# potential_2 = electron_state_2.static_potential + state.density_potential
-# potential_2.convert_to("eV")
-# plt.plot(potential_1)
-# plt.plot(potential_2)
-# plt.show()
+electron_state_1 = state.electron_states[0]
+potential_1 = electron_state_1.static_potential + state.density_potential
+potential_1.convert_to("eV")
+electron_state_2 = state.electron_states[1]
+potential_2 = electron_state_2.static_potential + state.density_potential
+potential_2.convert_to("eV")
+length = state.length
+length.convert_to("nm")
+x = np.linspace(0, length.value, len(potential_1))
+ax = plt.subplot(111)
+ax.plot(x, potential_1, label=r'$\Gamma$')
+ax.plot(x, potential_2, label="X")
+# Hide the right and top spines
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+
+# Only show ticks on the left and bottom spines
+ax.yaxis.set_ticks_position('left')
+ax.xaxis.set_ticks_position('bottom')
+ax.set_xlabel('Z, nm')
+ax.set_ylabel('V, eV')
+ax.legend((r'$\Gamma$', 'X'))
+plt.show()
 solver = spsc_solver.LatticeXElectronsSymmetrySolver(state)
 solver.solve()
 state = solver.state
