@@ -44,31 +44,25 @@ state = solver.state
 # state.export_file('data/solutions/x_electrons_superlattice_diff_mass/disser.yml')
 
 # state = spsc_core.StateSimple.import_file('data/solutions/x_electrons_superlattice_diff_mass/disser.yml')
+length = state.length
+length.convert_to("nm")
 electron_state_1 = state.electron_states[0]
 potential_1 = electron_state_1.static_potential + state.density_potential
 potential_1.convert_to("eV")
 E1 = electron_state_1.energy_levels[0]
 E1.convert_to('eV')
-plt.plot(potential_1)
 wf_1 = electron_state_1.wave_functions[0]
 wf_1.value = wf_1.value * 0.3
-plt.plot(wf_1)
 
 electron_state_2 = state.electron_states[1]
 potential_2 = electron_state_2.static_potential + state.density_potential
 potential_2.convert_to('eV')
-plt.plot(potential_2)
 wf_x = electron_state_2.wave_functions[0]
 wf_x.value = wf_x.value * 0.1
 Ex = electron_state_2.energy_levels[0]
 Ex.convert_to('eV')
-plt.plot(wf_x)
 
 electron_state_1.static_potential.convert_to('eV')
-plt.plot(E1.value * np.ones((len(potential_1), ), "float64"))
-plt.plot(Ex.value * np.ones((len(potential_1), ), "float64"))
-
-plt.show()
 
 n = spsc_data.DensityValue(6.81 * 10 ** 15, 'm^-2')
 n.convert_to(n.units_default)
@@ -81,6 +75,29 @@ Ef1 = Ef - E1
 Ef.convert_to('eV')
 E1.convert_to('eV')
 Ef1.convert_to('eV')
+
+x = np.linspace(0, length.value, len(potential_1))
+ax = plt.subplot(111)
+# Hide the right and top spines
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+ax.set_xlabel('Z, nm', fontsize=16)
+ax.set_ylabel('V, eV', fontsize=16)
+ax.plot(x, potential_1, label=r'$\Gamma$')
+ax.plot(x, potential_2, label='X')
+ax.plot(x, wf_1, label=r'$\psi_\Gamma$')
+ax.plot(x, wf_x, label=r'$\psi_X$')
+ax.plot(x, E1.value * np.ones((len(potential_1), ), "float64"), label=r'$E_\Gamma$')
+ax.plot(x, Ex.value * np.ones((len(potential_1), ), "float64"), label=r'$E_x$')
+ax.plot(x, Ef.value * np.ones((len(potential_1), ), "float64"), label=r'$E_f$', ls='-.', c='black')
+ax.legend(fontsize=14)
+for tick in ax.xaxis.get_major_ticks():
+    tick.label.set_fontsize(16)
+for tick in ax.yaxis.get_major_ticks():
+    tick.label.set_fontsize(16)
+plt.savefig("GaAs_AlAs_solution.png", dpi=400, bbox_inches='tight')
+plt.show()
+
 print "E1: ", E1
 print "Ef1: ", Ef1
 print "Ex: ", Ex
