@@ -56,11 +56,11 @@ class SlopedWellSolver(ASolver):
 class LatticeSymmetrySolver(ASolver):
     def solve(self):
         # 30 nm well
-        # E_start = spsc_data.EnergyValue(0.001, "eV")
-        # E_end = spsc_data.EnergyValue(0.4, "eV")
+        E_start = spsc_data.EnergyValue(0.001, "eV")
+        E_end = spsc_data.EnergyValue(0.4, "eV")
         # 13 nm well
-        E_start = spsc_data.EnergyValue(0.01, "eV")
-        E_end = spsc_data.EnergyValue(0.08, "eV")
+        # E_start = spsc_data.EnergyValue(0.01, "eV")
+        # E_end = spsc_data.EnergyValue(0.08, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
         static_potential = self.state.electron_states[0].static_potential
         meta_info = static_potential.meta_info
@@ -69,7 +69,7 @@ class LatticeSymmetrySolver(ASolver):
             iteration_factory = spsc_shrod.SolutionIterationSymmetryLatticeDiffMassFactory()
         else:
             iteration_factory = spsc_shrod.SolutionIterationSymmetryLatticeFactory()
-        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 1, iteration_factory)
+        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 2, iteration_factory)
         density_potential = self.state.density_potential
         length = self.state.length
         electron_state = self.state.electron_states[0]
@@ -215,7 +215,7 @@ class LatticeXElectronsSymmetrySolver(ASolver):
         #     self.__x_shrod()
         #     self.state.density_potential = self.__solve_puass()
 
-        E_start = spsc_data.EnergyValue(0.005, "eV")
+        E_start = spsc_data.EnergyValue(0.001, "eV")
         E_end = spsc_data.EnergyValue(0.3, "eV")
         dE = spsc_data.EnergyValue(0.0001, "eV")
 
