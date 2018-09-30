@@ -5,7 +5,7 @@ import spsc_constants as constants
 import yaml
 import copy
 
-DOTS_PER_NM = 10
+DOTS_PER_NM = 100
 
 
 def single_well(well_length):

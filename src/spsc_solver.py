@@ -93,6 +93,8 @@ class LatticeSymmetrySolver(ASolver):
                     electron_state.energy_levels.append(energy_level)
 
             density_potential = self.__solve_puass()
+            # density_potential = self.__solve_puass() + density_potential
+            # density_potential.value = density_potential.value / 2
         self.state.density_potential = density_potential
 
     def __get_E_Fermi(self):

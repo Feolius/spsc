@@ -30,12 +30,13 @@ E2 = electron_state_1.energy_levels[1]
 E2.convert_to('eV')
 wf_2 = electron_state_1.wave_functions[1]
 wf_2.value = wf_2.value * 0.3
+wf_2.value[len(wf_2) / 2:] = - wf_2.value[len(wf_2) / 2:]
 
 electron_state_2 = state.electron_states[1]
 potential_2 = electron_state_2.static_potential + state.density_potential
 potential_2.convert_to('eV')
 wf_x = electron_state_2.wave_functions[0]
-wf_x.value = wf_x.value * 0.1
+wf_x.value = wf_x.value * 0.05
 Ex = electron_state_2.energy_levels[0]
 Ex.convert_to('eV')
 
@@ -58,6 +59,7 @@ Ef1.convert_to('eV')
 Ef2.convert_to('eV')
 
 x = np.linspace(0, length.value, len(potential_1))
+np.savetxt("z_C237.csv", x, delimiter=",")
 ax = plt.subplot(111)
 # Hide the right and top spines
 ax.spines['right'].set_visible(False)
@@ -65,13 +67,23 @@ ax.spines['top'].set_visible(False)
 ax.set_xlabel('Z, nm', fontsize=16)
 ax.set_ylabel('V, eV', fontsize=16)
 ax.plot(x, potential_1, label=r'$\Gamma$')
+np.savetxt("gamma_potential_C237.csv", potential_1, delimiter=",")
 ax.plot(x, potential_2, label='X')
+np.savetxt("X_potential_C237.csv", potential_2, delimiter=",")
 ax.plot(x, wf_1, label=r'$\psi_\Gamma$1')
+np.savetxt("wf1_C237.csv", wf_1, delimiter=",")
 ax.plot(x, wf_2, label=r'$\psi_\Gamma$2')
+np.savetxt("wf2_C237.csv", wf_2, delimiter=",")
 ax.plot(x, wf_x, label=r'$\psi_X$')
+np.savetxt("wfx_C237.csv", wf_x, delimiter=",")
 ax.plot(x, E1.value * np.ones((len(potential_1), ), "float64"), label=r'$E_\Gamma$')
+np.savetxt("E1_C237.csv", E1.value * np.ones((len(potential_1), ), "float64"), delimiter=",")
+ax.plot(x, E2.value * np.ones((len(potential_1), ), "float64"), label=r'$E_\Gamma$')
+np.savetxt("E2_C237.csv", E2.value * np.ones((len(potential_1), ), "float64"), delimiter=",")
 ax.plot(x, Ex.value * np.ones((len(potential_1), ), "float64"), label=r'$E_x$')
+np.savetxt("Ex_C237.csv", Ex.value * np.ones((len(potential_1), ), "float64"), delimiter=",")
 ax.plot(x, Ef.value * np.ones((len(potential_1), ), "float64"), label=r'$E_f$', ls='-.', c='black')
+np.savetxt("Ef_C237.csv", Ef.value * np.ones((len(potential_1), ), "float64"), delimiter=",")
 ax.legend(fontsize=14)
 for tick in ax.xaxis.get_major_ticks():
     tick.label.set_fontsize(16)
