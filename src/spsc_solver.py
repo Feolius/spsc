@@ -69,7 +69,7 @@ class LatticeSymmetrySolver(ASolver):
             iteration_factory = spsc_shrod.SolutionIterationSymmetryLatticeDiffMassFactory()
         else:
             iteration_factory = spsc_shrod.SolutionIterationSymmetryLatticeFactory()
-        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 2, iteration_factory)
+        solution_strategy = spsc_shrod.IterableSolutionStrategySymmetricWell(E_start, E_end, dE, 1, iteration_factory)
         density_potential = self.state.density_potential
         length = self.state.length
         electron_state = self.state.electron_states[0]
